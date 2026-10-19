@@ -15,28 +15,30 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install Playwright
+      - name: Install isolated Playwright
         run: |
+          mkdir -p /tmp/presentation-renderer
+          cd /tmp/presentation-renderer
           npm init -y
-          npm install --no-save playwright
+          npm install playwright
           npx playwright install --with-deps chromium
       - name: Render the presentation to PDF
         run: |
+          cd /tmp/presentation-renderer
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           import { pathToFileURL } from 'node:url';
           import { resolve } from 'node:path';
+          const repo = process.env.GITHUB_WORKSPACE;
           const browser = await chromium.launch({ headless: true });
           const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-          await page.goto(pathToFileURL(resolve('docs/PRIVACYOS_Presentacion.html')).href, { waitUntil: 'domcontentloaded' });
+          await page.goto(pathToFileURL(resolve(repo, 'docs/PRIVACYOS_Presentacion.html')).href, { waitUntil: 'domcontentloaded' });
           await page.emulateMedia({ media: 'print' });
-          await page.pdf({ path: 'docs/PRIVACYOS_Presentacion.pdf', printBackground: true, preferCSSPageSize: true });
+          await page.pdf({ path: resolve(repo, 'docs/PRIVACYOS_Presentacion.pdf'), printBackground: true, preferCSSPageSize: true });
           await browser.close();
           NODE
       - name: Commit generated PDF
