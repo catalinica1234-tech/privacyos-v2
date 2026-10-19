@@ -1,107 +1,53 @@
-# PRIVACYOS — Identidad «Serenidad» (Hito 1)
+# PRIVACYOS — Inteligencia para la privacidad digital
 
-Plataforma de inteligencia para la privacidad digital: analiza un sitio web público, observa
-**evidencia técnica real** (cabeceras HTTP de seguridad, cookies de la primera respuesta, HTML
-inicial, `robots.txt`, DNS) y presenta un **informe profesional** con score explicable,
-hallazgos clasificados honestamente (confirmado / posible / riesgo técnico / insuficiente /
-preventivo), relación normativa indicativa y un **plan de acción priorizado**.
+**Propuesta de valor:** PRIVACYOS transforma señales técnicas observables de privacidad web en hallazgos explicables y prioridades de revisión. Ayuda a los equipos a entender qué se observó, por qué puede importar y qué conviene revisar primero. Es una herramienta de apoyo y no sustituye una auditoría profesional ni certifica cumplimiento legal.
 
-> Este proyecto es una reconstrucción desde cero. **No reutiliza** el repositorio anterior
-> (`catalinica1234-tech/privacyos`), que permanece intacto.
+## Producto y demostración
 
----
+- **Aplicación web:** https://privacyos-v2.vercel.app/
+- **Dashboard:** https://privacyos-v2.vercel.app/app/dashboard
+- **Nuevo análisis:** https://privacyos-v2.vercel.app/app/nuevo
+- **Repositorio:** https://github.com/catalinica1234-tech/privacyos-v2
 
-## Qué es real y qué no (transparencia del producto)
+La aplicación permite realizar una revisión acotada de un sitio web público y presentar hallazgos asociados a señales técnicas observadas. El recorrido principal es **Dashboard → Nuevo análisis → Progreso → Informe**. El historial y las preferencias se guardan localmente en el navegador.
 
-| Componente | Estado en Hito 1 |
-| --- | --- |
-| Validación de URLs (protocolo, puertos, DNS, anti-SSRF, redirecciones revalidadas) | ✅ Real (servidor) |
-| Consulta HTTP limitada a la página inicial + cabeceras + cookies + HTML ≤ N bytes + robots.txt | ✅ Real (motor `1.0.0-sereno`) |
-| Score, hallazgos, recomendaciones y evidencias derivadas | ✅ Solo desde evidencia observada |
-| Historial, perfil y preferencias | ⚠️ `localStorage` del navegador (sin base de datos) |
-| Cuentas / autenticación | 🕑 Fase 2 (arquitectura preparada, no implementada) |
-| Crawling, análisis del texto de políticas, monitorización continua | 🕑 Fuera de alcance del Hito 1 (se declara en cada informe) |
-| Dataset ilustrativo | 🏷️ Marcado siempre con la píldora «MUESTRA ILUSTRATIVA» y `dataMode: sample` |
+## Entregables académicos
 
-Ley 21.719 (Chile): publicada el **13-DIC-2024**, entra en vigor el **01-DIC-2026**
-(verificado en [LeyChile](https://www.leychile.cl/leychile/navegar?idNorma=1209272)). Hasta esa
-fecha rige la Ley 19.628. PRIVACYOS usa 21.719 como marco *preparatorio* y lo identifica así.
+Todos los documentos se encuentran en [`docs/`](docs/).
 
-**PRIVACYOS no emite dictámenes legales ni determina cumplimiento.**
+| Entregable | Archivo |
+|---|---|
+| Láminas para entregar y proyectar | [Presentación PDF](docs/PRIVACYOS_Presentacion.pdf) |
+| Presentación interactiva con demo integrada | [Presentación HTML](docs/PRIVACYOS_Presentacion.html) |
+| Prototipo navegable | [Abrir aplicación desplegada](https://privacyos-v2.vercel.app/app/dashboard) |
+| Mapa del producto y rutas de navegación | [mapa-producto.svg](docs/mapa-producto.svg) |
+| Arquitectura cliente-servidor y capas | [diagrama-arquitectura.svg](docs/diagrama-arquitectura.svg) |
+| Guion completo de exposición | [guion-exposicion.md](docs/guion-exposicion.md) |
+| Carta Gantt | [carta-gantt.html](docs/carta-gantt.html) |
+| Auditoría de criterios | [auditoria-hito1.md](docs/auditoria-hito1.md) |
+| Checklist de cierre | [CHECKLIST_CIERRE_HITO1.md](docs/CHECKLIST_CIERRE_HITO1.md) |
+| Cambios pendientes del informe | [CAMBIOS_PENDIENTES_INFORME.md](docs/CAMBIOS_PENDIENTES_INFORME.md) |
 
----
+> **Informe de propuesta:** queda deliberadamente fuera del repositorio hasta que su autora termine la edición y verifique las citas, referencias, figuras y extensión. No se debe subir ningún PDF de informe previo como definitivo.
 
-## Ejecución local
+## Equipo
 
-Requisitos: Node.js 18+ (desarrollado con Node 24).
+- **Catalina Romero** — [@catalinica1234-tech](https://github.com/catalinica1234-tech): frontend, integración y revisión.
+- **Melisa Ibáñez** — [@melisaibanezdelgado-eng](https://github.com/melisaibanezdelgado-eng): investigación, documentación y propuesta.
+- **Simón Salgado** — [@simonsalgadousa-ux](https://github.com/simonsalgadousa-ux): arquitectura y presentación.
 
-```bash
-npm install
-cp .env.example .env.local   # opcional: ajusta ANALYZE_TIMEOUT_MS si tu plan de Vercel es más corto
-npm run dev                  # http://localhost:3000
-```
+## Arquitectura y tecnologías
 
-Validaciones técnicas:
+PRIVACYOS utiliza Next.js con App Router, React, TypeScript, Tailwind CSS y Zod. El endpoint `POST /api/analyze` valida la entrada, aplica comprobaciones de seguridad para reducir riesgos SSRF y ejecuta un análisis limitado de señales técnicas del sitio público. Los hallazgos se generan a partir de evidencia observada; la persistencia de historial y preferencias es local al navegador.
 
-```bash
-npm run typecheck   # tsc --noEmit
-npm run lint        # eslint
-npm run build       # build de producción
-```
+## Alcance y transparencia
 
----
+- El análisis se limita a señales observables y a la respuesta inicial consultada; no realiza crawling exhaustivo.
+- Las relaciones con marcos normativos son orientativas y no constituyen un dictamen legal ni una certificación de cumplimiento.
+- No se afirma que exista autenticación multiusuario, persistencia compartida en una base de datos o monitorización continua.
+- La aplicación es web responsive; no se presenta como aplicación nativa para iOS o Android.
+- Las funcionalidades no implementadas se consideran trabajo futuro, no capacidades disponibles.
 
-## Despliegue en Vercel
+## Cómo navegar la presentación
 
-1. Sube este proyecto a un **repositorio GitHub nuevo e independiente** (esta carpeta ya es un
-   proyecto autocontenido; revisa `.gitignore`).
-2. En Vercel: *Add New Project* → importa el repo → framework **Next.js** (detectado).
-3. Variables de entorno (todas opcionales, ver `.env.example`):
-   - `NEXT_PUBLIC_SITE_URL` — URL pública del despliegue.
-   - `ANALYZE_TIMEOUT_MS` — timeout del fetch externo (**recomendado ≤ 8000** en planes con límite de 10 s; mantenlo por debajo del tope de tu plan).
-   - `ANALYZE_MAX_BODY_BYTES`, `ANALYZE_MAX_REDIRECTS` — ajustes del motor.
-4. La ruta `/api/analyze` usa `runtime = "nodejs"` y `maxDuration = 30`; reduce `maxDuration`
-   si tu plan no lo permite.
-
----
-
-## Arquitectura
-
-```
-app/
-  page.tsx                    Landing comercial (Serenidad)
-  app/                        Aplicación (shell propio, navegación completa)
-    dashboard · nuevo · progreso/[jobId] · informe/[id]
-    historial · comparar · regulatorio · derechos · perfil · configuracion
-  api/analyze/route.ts        Motor real (POST, Node runtime, SSRF-safe)
-components/                   Sistema de diseño Serenidad + shell + landing
-lib/
-  contracts.ts                Contratos Zod compartidos UI ↔ motor
-  frameworks.ts               Catálogo normativo con fuentes oficiales
-  analyzer/safety.ts          Guardas anti-SSRF (DNS, rangos privados, puertos)
-  analyzer/engine.ts          Motor de evidencia y hallazgos (sin datos inventados)
-  store.ts                    Persistencia local (localStorage) — reemplazable por API
-  sample.ts                   Dataset ilustrativo (siempre marcado)
-  export.ts                   Exportación .md/.json/copiar
-```
-
-Preparado para la fase 2: `lib/store.ts` es la única costura entre la interfaz y la
-persistencia; el día que exista backend (autenticación + base de datos), se cambia este
-módulo por un adaptador HTTP sin tocar las pantallas.
-
----
-
-## Identidad visual Serenidad
-
-- Paleta: marfil (fondo), grafito (texto), verde bosque (acción principal), menta (señal positiva),
-  con escala de riesgo (bajo/medio/alto/crítico) en modos claro y oscuro.
-- Tipografía: Instrument Sans (títulos/UI) + Inter (texto), números tabulares.
-- Tokens en `app/globals.css` + mapeo en `tailwind.config.ts`; modo oscuro por clase `.dark`
-  sin parpadeo (script inline en `app/layout.tsx`).
-
-## Límites y advertencias
-
-- Los resultados reflejan la observación de la **fecha de ejecución**; los sitios cambian.
-- La detección de terceros se basa en firmas conocidas (GA/GTM, Meta Pixel, Clarity, Hotjar, etc.).
-- Las relaciones entre evidencia y normativas son **indicativas**; no hay cálculo de sanciones.
-- Contacto de demostración en el footer (`contacto@privacyos.cl`): cámbialo por el real antes de publicar.
+Abre `docs/PRIVACYOS_Presentacion.html` en un navegador moderno. Usa los botones de navegación o las flechas izquierda/derecha; la tecla `F` activa pantalla completa. La diapositiva de demostración integra la aplicación y ofrece enlaces directos por si el navegador bloquea la incrustación.
