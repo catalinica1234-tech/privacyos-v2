@@ -1,0 +1,60 @@
+// PRIVACYOS · Esquema de datos · Hito 2
+//
+// Genera el cliente con:  npx prisma generate
+// Crea la base desde cero con:  npx prisma migrate dev   (en desarrollo)
+//                            o aplica db/init.sql      (script reproducible)
+//
+// Convenciones:
+// - Los ids de "sites" son cuid() (generados por la base/pCliente).
+// - Los ids de "analyses" usan el formato PS-XXXXXX que ya asigna el motor
+//   (lib/contracts.ts) para que el historial e informe del frontend sigan
+//   funcionando idéntico con datos locales o de la base.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Recurso: site — servicio web registrado para revisión.
+// Un análisis puede hacerse contra un sitio registrado (siteId)
+// o de forma avulsa (siteId nulo → análisis anónimo).
+// ──────────────────────────────────────────────────────────────
+model Site {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  nombre    String?
+  notas     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  analyses Analysis[]
+
+  @@map("sites")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Recurso: analysis — resultado del motor (score, riesgo, payload
+// completo del contrato lib/contracts.ts, notas de revisión).
+// ──────────────────────────────────────────────────────────────
+model Analysis {
+  id         String   @id // formato PS-XXXXXX asignado por el servicio
+  url        String
+  score      Int // 0..100
+  riskLevel  String? // "bajo" | "medio" | "alto" | "critico" (puede ser null)
+  payload    Json // Análisis completo validado por Zod
+  notas      String?
+  revisado   Boolean  @default(false)
+  siteId     String?
+  site       Site?    @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@index([siteId])
+  @@map("analyses")
+}

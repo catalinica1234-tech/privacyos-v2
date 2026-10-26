@@ -1,1 +1,142 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760"><rect width="1200" height="760" fill="#f7f7f2"/><text x="48" y="58" font-family="Arial,sans-serif" font-size="32" font-weight="700" fill="#163e31">PRIVACYOS — Mapa del producto</text><text x="48" y="88" font-family="Arial,sans-serif" font-size="16" fill="#52665b">Jerarquía de secciones y rutas de navegación</text><rect x="425" y="125" width="350" height="70" rx="16" fill="#163e31"/><text x="600" y="167" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff">PRIVACYOS</text><path d="M600 195V230H200V260M600 230H600V260M600 230H1000V260" stroke="#628b76" stroke-width="3" fill="none"/><rect x="55" y="260" width="290" height="95" rx="12" fill="#fff" stroke="#b9cec0" stroke-width="2"/><text x="200" y="292" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#163e31">Sitio público</text><text x="200" y="320" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#52665b">Propuesta · FAQ · muestra</text><rect x="455" y="260" width="290" height="95" rx="12" fill="#fff" stroke="#b9cec0" stroke-width="2"/><text x="600" y="292" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#163e31">Aplicación</text><text x="600" y="320" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#52665b">Dashboard · nuevo análisis</text><rect x="855" y="260" width="290" height="95" rx="12" fill="#fff" stroke="#b9cec0" stroke-width="2"/><text x="1000" y="292" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#163e31">Gestión y preferencias</text><text x="1000" y="320" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#52665b">Historial · perfil · ajustes</text><path d="M600 355V395" stroke="#628b76" stroke-width="3"/><rect x="395" y="395" width="410" height="65" rx="12" fill="#e3efe6" stroke="#b9cec0" stroke-width="2"/><text x="600" y="434" text-anchor="middle" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#163e31">Flujo principal de análisis</text><path d="M600 460V490H300V520M600 490V520M600 490H900V520" stroke="#628b76" stroke-width="3" fill="none"/><rect x="170" y="520" width="260" height="80" rx="12" fill="#fff" stroke="#b9cec0" stroke-width="2"/><text x="300" y="553" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#163e31">1. Nuevo análisis</text><text x="300" y="578" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#52665b">Ingresar URL pública</text><rect x="470" y="520" width="260" height="80" rx="12" fill="#fff" stroke="#b9cec0" stroke-width="2"/><text x="600" y="553" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#163e31">2. Progreso</text><text x="600" y="578" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#52665b">Procesamiento del análisis</text><rect x="770" y="520" width="260" height="80" rx="12" fill="#fff" stroke="#b9cec0" stroke-width="2"/><text x="900" y="553" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#163e31">3. Informe</text><text x="900" y="578" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#52665b">Hallazgos · evidencias · acciones</text><text x="48" y="715" font-family="Arial,sans-serif" font-size="13" fill="#52665b">Fuente: elaboración del equipo a partir de la navegación del producto.</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="920" viewBox="0 0 1400 920" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1400" height="920" fill="#FAF9F4"/>
+
+  <text x="44" y="56" font-size="30" font-weight="700" fill="#2F5545">PRIVACYOS — Mapa del producto</text>
+  <text x="44" y="80" font-size="14" fill="#6E6A61">Árbol de secciones, jerarquía y rutas de navegación · estado real de la aplicación desplegada</text>
+
+  <!-- ================= TRONCO ================= -->
+  <g stroke="#8AA694" stroke-width="1.5" fill="none">
+    <line x1="700" y1="166" x2="700" y2="188"/>
+    <line x1="190" y1="188" x2="1040" y2="188"/>
+    <line x1="190" y1="188" x2="190" y2="210"/>
+    <line x1="1040" y1="188" x2="1040" y2="210"/>
+
+    <!-- ramal izquierdo (público) -->
+    <polyline points="190,268 190,280 48,280"/>
+    <line x1="48" y1="280" x2="48" y2="422"/>
+    <line x1="48" y1="314" x2="60" y2="314"/>
+    <line x1="48" y1="368" x2="60" y2="368"/>
+    <line x1="48" y1="422" x2="60" y2="422"/>
+
+    <!-- ramal derecho (app) -->
+    <polyline points="1040,268 1040,324"/>
+    <line x1="848" y1="324" x2="1232" y2="324"/>
+    <line x1="848" y1="324" x2="848" y2="340"/>
+    <line x1="1040" y1="324" x2="1040" y2="340"/>
+    <line x1="1232" y1="324" x2="1232" y2="340"/>
+
+    <!-- corredor hacia fila 2 -->
+    <polyline points="1320,239 1336,239 1336,640 948,640"/>
+    <line x1="1336" y1="640" x2="1152" y2="640"/>
+    <line x1="948" y1="640" x2="948" y2="650"/>
+    <line x1="1152" y1="640" x2="1152" y2="650"/>
+  </g>
+
+  <!-- ================= RAÍZ ================= -->
+  <rect x="560" y="104" width="280" height="62" rx="14" fill="#2F5545"/>
+  <text x="700" y="132" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">PRIVACYOS</text>
+  <text x="700" y="152" font-size="10.5" fill="#CBE5DB" text-anchor="middle">Identidad Serenidad · desplegada en producción</text>
+
+  <!-- ================= NIVEL 0 · PÚBLICO ================= -->
+  <rect x="40" y="210" width="300" height="58" rx="12" fill="#FFFFFF" stroke="#2F5545" stroke-width="1.5"/>
+  <text x="52" y="232" font-size="11" font-weight="700" fill="#2F5545" letter-spacing="1">NIVEL 0 · SITIO PÚBLICO</text>
+  <text x="52" y="252" font-size="12" fill="#6E6A61">Landing comercial · ruta <tspan font-family="Consolas, monospace" fill="#3E4A44">/</tspan></text>
+
+  <rect x="60" y="292" width="280" height="44" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="72" y="311" font-size="12" font-weight="600" fill="#2B2B28">Propuesta de valor</text>
+  <text x="72" y="327" font-size="10" fill="#6E6A61">problema · cómo funciona · FAQ honesta</text>
+
+  <rect x="60" y="346" width="280" height="44" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="72" y="365" font-size="12" font-weight="600" fill="#2B2B28">Informe de muestra</text>
+  <text x="72" y="381" font-size="10" fill="#6E6A61">datos ilustrativos, marcados como tales</text>
+
+  <rect x="60" y="400" width="280" height="44" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="72" y="419" font-size="12" font-weight="600" fill="#2B2B28">Entrar a la aplicación</text>
+  <text x="72" y="435" font-size="10" fill="#6E6A61">botón hacia <tspan font-family="Consolas, monospace">/app/dashboard</tspan></text>
+
+  <!-- ================= NIVEL 1 · APP ================= -->
+  <rect x="760" y="210" width="560" height="58" rx="12" fill="#FFFFFF" stroke="#2F5545" stroke-width="1.5"/>
+  <text x="772" y="232" font-size="11" font-weight="700" fill="#2F5545" letter-spacing="1">NIVEL 1 · APLICACIÓN</text>
+  <text x="772" y="252" font-size="12" fill="#6E6A61">Espacio de trabajo · ruta <tspan font-family="Consolas, monospace" fill="#3E4A44">/app</tspan> · hoy sin cuentas (sesión local)</text>
+
+  <!-- Fila 1 col A · Valor central -->
+  <rect x="760" y="340" width="176" height="290" rx="12" fill="#FFFFFF" stroke="#DCD6C8"/>
+  <rect x="760" y="340" width="4" height="290" rx="2" fill="#2F5545"/>
+  <text x="776" y="364" font-size="12.5" font-weight="700" fill="#2F5545">Valor central</text>
+  <text x="776" y="380" font-size="9.5" fill="#6E6A61">el hogar</text>
+  <rect x="774" y="398" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="784" y="417" font-size="11.5" font-weight="600" fill="#2B2B28">Dashboard</text>
+  <text x="784" y="434" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/dashboard</text>
+  <text x="776" y="464" font-size="9.5" fill="#6E6A61">Estado del espacio de</text>
+  <text x="776" y="478" font-size="9.5" fill="#6E6A61">trabajo y accesos rápidos</text>
+  <text x="776" y="500" font-size="9.5" fill="#6E6A61">a los flujos principales.</text>
+
+  <!-- Fila 1 col B · Flujo de análisis -->
+  <rect x="952" y="340" width="176" height="290" rx="12" fill="#FFFFFF" stroke="#DCD6C8"/>
+  <rect x="952" y="340" width="4" height="290" rx="2" fill="#2F5545"/>
+  <text x="968" y="364" font-size="12.5" font-weight="700" fill="#2F5545">Flujo de análisis</text>
+  <text x="968" y="380" font-size="9.5" fill="#6E6A61">el camino principal</text>
+  <rect x="966" y="398" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="976" y="417" font-size="11.5" font-weight="600" fill="#2B2B28">Nuevo análisis</text>
+  <text x="976" y="434" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/nuevo</text>
+  <polygon points="1035,452 1045,452 1040,459" fill="#2E8F73"/>
+  <rect x="966" y="468" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="976" y="487" font-size="11.5" font-weight="600" fill="#2B2B28">Progreso</text>
+  <text x="976" y="504" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/progreso/[jobId]</text>
+  <polygon points="1035,522 1045,522 1040,529" fill="#2E8F73"/>
+  <rect x="966" y="538" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="976" y="557" font-size="11.5" font-weight="600" fill="#2B2B28">Informe</text>
+  <text x="976" y="574" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/informe/[id]</text>
+  <text x="968" y="602" font-size="9.5" fill="#6E6A61">Informe con 5 pestañas:</text>
+  <text x="968" y="616" font-size="9.5" font-weight="600" fill="#496655">Resumen · Hallazgos ·</text>
+  <text x="968" y="630" font-size="9.5" font-weight="600" fill="#496655">Evidencias · Plan · Normativa</text>
+
+  <!-- Fila 1 col C · Revisar lo hecho -->
+  <rect x="1144" y="340" width="176" height="290" rx="12" fill="#FFFFFF" stroke="#DCD6C8"/>
+  <rect x="1144" y="340" width="4" height="290" rx="2" fill="#2F5545"/>
+  <text x="1160" y="364" font-size="12.5" font-weight="700" fill="#2F5545">Revisar lo hecho</text>
+  <text x="1160" y="380" font-size="9.5" fill="#6E6A61">siempre accesible</text>
+  <rect x="1158" y="398" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="1168" y="417" font-size="11.5" font-weight="600" fill="#2B2B28">Historial</text>
+  <text x="1168" y="434" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/historial</text>
+  <rect x="1158" y="468" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="1168" y="487" font-size="11.5" font-weight="600" fill="#2B2B28">Comparar</text>
+  <text x="1168" y="504" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/comparar</text>
+  <text x="1160" y="532" font-size="9.5" fill="#6E6A61">Elige dos análisis del</text>
+  <text x="1160" y="546" font-size="9.5" fill="#6E6A61">historial y los compara</text>
+  <text x="1160" y="560" font-size="9.5" fill="#6E6A61">lado a lado.</text>
+  <text x="1160" y="600" font-size="9.5" fill="#6E6A61">Desde el informe también</text>
+  <text x="1160" y="614" font-size="9.5" fill="#6E6A61">se exportan .md y .json.</text>
+
+  <!-- Fila 2 · Aprender -->
+  <rect x="860" y="650" width="176" height="210" rx="12" fill="#FFFFFF" stroke="#DCD6C8"/>
+  <rect x="860" y="650" width="4" height="210" rx="2" fill="#2F5545"/>
+  <text x="876" y="674" font-size="12.5" font-weight="700" fill="#2F5545">Aprender</text>
+  <text x="876" y="690" font-size="9.5" fill="#6E6A61">contexto normativo</text>
+  <rect x="874" y="708" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="884" y="727" font-size="11.5" font-weight="600" fill="#2B2B28">Regulatorio</text>
+  <text x="884" y="744" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/regulatorio</text>
+  <rect x="874" y="778" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="884" y="797" font-size="11.5" font-weight="600" fill="#2B2B28">Derechos</text>
+  <text x="884" y="814" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/derechos</text>
+  <text x="876" y="838" font-size="9.5" fill="#6E6A61">Ley 19.628 · Ley 21.719 ·</text>
+  <text x="876" y="852" font-size="9.5" fill="#6E6A61">RGPD · plantillas ARCO/P</text>
+
+  <!-- Fila 2 · Configurar -->
+  <rect x="1064" y="650" width="176" height="210" rx="12" fill="#FFFFFF" stroke="#DCD6C8"/>
+  <rect x="1064" y="650" width="4" height="210" rx="2" fill="#2F5545"/>
+  <text x="1080" y="674" font-size="12.5" font-weight="700" fill="#2F5545">Configurar</text>
+  <text x="1080" y="690" font-size="9.5" fill="#6E6A61">preferencias locales</text>
+  <rect x="1078" y="708" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="1088" y="727" font-size="11.5" font-weight="600" fill="#2B2B28">Perfil</text>
+  <text x="1088" y="744" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/perfil</text>
+  <rect x="1078" y="778" width="148" height="46" rx="10" fill="#F3F6F3" stroke="#D9E2DC"/>
+  <text x="1088" y="797" font-size="11.5" font-weight="600" fill="#2B2B28">Configuración</text>
+  <text x="1088" y="814" font-size="9.5" font-family="Consolas, monospace" fill="#5B7A6E">/app/configuracion</text>
+  <text x="1080" y="838" font-size="9.5" fill="#6E6A61">Tema claro/oscuro y</text>
+  <text x="1080" y="852" font-size="9.5" fill="#6E6A61">datos guardados en el equipo</text>
+
+  <!-- ================= LEYENDA ================= -->
+  <text x="44" y="882" font-size="12" font-weight="600" fill="#2F5545">Jerarquía: Nivel 0 (público) → Nivel 1 (aplicación) → grupos de trabajo → pantallas.</text>
+  <text x="44" y="902" font-size="11" fill="#6E6A61">Las rutas [jobId] e [id] se anidan bajo un análisis concreto · nombres en español según la función de cada pantalla.</text>
+</svg>

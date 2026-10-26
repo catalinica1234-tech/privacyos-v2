@@ -18,6 +18,7 @@ import {  ArrowRight,
 } from "lucide-react";
 import type { Analysis, Evidence, Finding } from "@/lib/contracts";
 import { getHistory } from "@/lib/store";
+import { analisisRemoto } from "@/lib/api-client";
 import { sampleAnalysis } from "@/lib/sample";
 import { FRAMEWORKS } from "@/lib/frameworks";
 import { copyToClipboard, downloadText, toMarkdown } from "@/lib/export";
@@ -33,6 +34,7 @@ import {
 } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Alert, EmptyState, LinkBtn, Meter, Pill, Tabs } from "@/components/ui";
+import { AsistenteIA } from "@/components/asistente-ia";
 
 const TABS = [
   { id: "resumen", label: "Resumen" },
@@ -68,14 +70,27 @@ export default function InformePage() {
     setReady(true);
   }, []);
 
-  const analysis: Analysis | null = useMemo(() => {
+  const local: Analysis | null = useMemo(() => {
     const found = history.find((a) => a.id === id);
     if (found) return found;
     if (id === sampleAnalysis.id) return sampleAnalysis;
     return null;
   }, [history, id]);
 
-  if (!ready) {
+  // Respaldo servidor: si el informe no está en este navegador (ej. viene de
+  // la base de datos o se abrió en otro equipo), se pide a /api/analyses/{id}.
+  const [remota, setRemota] = useState<Analysis | null | undefined>(undefined); // undefined = sin decidir
+  const necesitaRemota = local === null && /^PS-[A-Z0-9]{6}$/.test(id);
+  useEffect(() => {
+    if (!necesitaRemota) return;
+    let vivo = true;
+    analisisRemoto(id).then((a) => { if (vivo) setRemota(a); });
+    return () => { vivo = false; };
+  }, [necesitaRemota, id]);
+
+  const analysis: Analysis | null = local ?? (remota ?? null);
+
+  if (!ready || (local === null && necesitaRemota && remota === undefined)) {
     return (
       <div className="grid gap-4">
         <div className="skeleton h-28" />
@@ -89,7 +104,7 @@ export default function InformePage() {
       <EmptyState
         icon={<FileText className="h-6 w-6" />}
         title="Informe no disponible"
-        text={`No existe el informe ${id} en el almacenamiento local de este navegador (o fue eliminado al vaciar el historial).`}
+        text={`No existe el informe ${id} ni en este navegador ni en la base de datos del servidor. Puede haber sido eliminado.`}
         action={
           <div className="flex flex-wrap justify-center gap-3">
             <LinkBtn href="/app/historial" variant="ghost" size="sm">Ver historial</LinkBtn>
@@ -187,6 +202,8 @@ export default function InformePage() {
       {tab === "evidencias" ? <Evidencias a={analysis} /> : null}
       {tab === "plan" ? <Plan a={analysis} /> : null}
       {tab === "normativa" ? <Normativa a={analysis} /> : null}
+
+      <AsistenteIA analysis={analysis} className="no-print" />
     </div>
   );
 }

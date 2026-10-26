@@ -146,6 +146,61 @@ export const analyzeResponse = z.discriminatedUnion("ok", [
 ]);
 export type AnalyzeResponse = z.infer<typeof analyzeResponse>;
 
+/* ── Hito 2 · Contratos REST (recursos sites y analyses) ── */
+
+export const siteCreateSchema = z
+  .object({
+    url: z
+      .string()
+      .max(2048)
+      .url()
+      .refine((u) => u.startsWith("http://") || u.startsWith("https://"), "Solo http/https"),
+    nombre: z.string().min(1).max(120).optional(),
+    notas: z.string().max(2000).optional(),
+  });
+export type SiteCreateInput = z.infer<typeof siteCreateSchema>;
+
+export const siteUpdateSchema = siteCreateSchema.partial();
+export type SiteUpdateInput = z.infer<typeof siteUpdateSchema>;
+
+export const analysisCreateSchema = analyzeRequestSchema.extend({
+  siteId: z.string().cuid().optional(),
+});
+export type AnalysisCreateInput = z.infer<typeof analysisCreateSchema>;
+
+export const analysisUpdateSchema = z
+  .object({
+    notas: z.string().max(2000).nullable().optional(),
+    revisado: z.boolean().optional(),
+  })
+  .refine((d) => d.notas !== undefined || d.revisado !== undefined, "Envía al menos un campo.");
+export type AnalysisUpdateInput = z.infer<typeof analysisUpdateSchema>;
+
+/* ── Hito 2 · Asistente explicativo (IA) ── */
+
+export const assistantRequestSchema = z.object({
+  question: z.string().min(3).max(600),
+  // El cliente envía el informe YA cargado (localStorage, muestra o API).
+  // El servidor lo valida con el mismo contrato: nunca fictea contenido.
+  analysis: Analysis,
+});
+export type AssistantRequest = z.infer<typeof assistantRequestSchema>;
+
+export const assistantResponse = z.union([
+  z.object({
+    ok: z.literal(true),
+    answer: z.string(),
+    disclaimer: z.string(),
+  }),
+  z.object({
+    ok: z.literal(false),
+    code: z.string(),
+    message: z.string(),
+    hint: z.string().optional(),
+  }),
+]);
+export type AssistantResponse = z.infer<typeof assistantResponse>;
+
 /* ── Preferencias locales ── */
 export const preferencesSchema = z.object({
   theme: z.enum(["light", "dark", "system"]),

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, CircleDashed, LoaderCircle, Radar, Save } from "lucide-react";
 import { analyzeResponse } from "@/lib/contracts";
 import { clearPendingAnalysis, getPendingAnalysis, saveAnalysis } from "@/lib/store";
+import { crearAnalisisServidor } from "@/lib/api-client";
 import { Alert, LinkBtn, Pill } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export default function ProgresoPage() {
   const [stage, setStage] = useState(0);
   const [target, setTarget] = useState<string | null>(null);
   const [error, setError] = useState<{ message: string; hint: string } | null>(null);
+  const [persistido, setPersistido] = useState<boolean | null>(null);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -49,14 +51,38 @@ export default function ProgresoPage() {
 
     (async () => {
       try {
+        const cuerpo = {
+          id: jobId && /^PS-[A-Z0-9]{6}$/.test(jobId) ? jobId : undefined,
+          url: pending?.url ?? "",
+          frameworkIds: pending?.frameworkIds ?? ["CL-1928", "CL-21719", "GDPR"],
+        };
+
+        // Hito 2: la ruta real corre el motor Y persiste en la base de datos.
+        // Si la API no está disponible (p. ej. base caída), degrada a la
+        // ruta del Hito 1 (/api/analyze, sin persistencia) para que la
+        // herramienta no se bloquee; el usuario lo ve aclarado en pantalla.
+        const viaApi = await crearAnalisisServidor({ url: cuerpo.url, frameworkIds: cuerpo.frameworkIds, id: cuerpo.id });
+        if ("analysis" in viaApi) {
+          window.clearInterval(ticker);
+          setStage(STAGES.length);
+          saveAnalysis(viaApi.analysis);
+          setPersistido(true);
+          await new Promise((r) => setTimeout(r, 500));
+          router.replace(`/app/informe/${viaApi.analysis.id}`);
+          return;
+        }
+        if (viaApi.status !== 0 && viaApi.error.code !== "RED" && viaApi.error.code !== "ERROR_INTERNO") {
+          // Errores con significado de dominio (URL inválida, protocolo, 403…): mostrarlos tal cual.
+          setError({ message: viaApi.error.message ?? "El análisis no pudo ejecutarse.", hint: viaApi.error.hint ?? "" });
+          return;
+        }
+        setPersistido(false);
+
+        // Degradación: motor sin persistencia (Hito 1).
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            id: jobId && /^PS-[A-Z0-9]{6}$/.test(jobId) ? jobId : undefined,
-            url: pending?.url ?? "",
-            frameworkIds: pending?.frameworkIds ?? ["CL-1928", "CL-21719", "GDPR"],
-          }),
+          body: JSON.stringify(cuerpo),
         });
         const json: unknown = await res.json();
         const parsed = analyzeResponse.safeParse(json);
@@ -134,7 +160,9 @@ export default function ProgresoPage() {
         ) : (
           <p className="mt-6 flex items-center gap-2 text-[12px] text-muted">
             <Save className="h-3.5 w-3.5" />
-            El resultado se guardará en el almacenamiento local de este navegador al finalizar.
+            {persistido === false
+              ? "La base de datos no responde: el resultado se guardará solo en este navegador (sin servidor)."
+              : "El resultado se guardará en la base de datos del servidor y en este navegador."}
           </p>
         )}
       </section>

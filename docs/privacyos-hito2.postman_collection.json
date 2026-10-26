@@ -1,0 +1,221 @@
+{
+  "info": {
+    "_postman_id": "8f2c1e4a-privacyos-hito2",
+    "name": "PRIVACYOS · Hito 2 · API CRUD",
+    "description": "Colección de demostración en vivo del Hito 2 (pauta INGT1003). Variables: {{baseUrl}} (default http://localhost:3000). Las peticiones encadenadas guardan los id en variables de entorno automáticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "01 · SITE · Crear (201)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/sites", "host": ["{{baseUrl}}"], "path": ["api", "sites"] },
+        "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://www.chile.gob.cl\",\n  \"nombre\": \"Portal Chile\",\n  \"notas\": \"Sitio de ejemplo para la demo\"\n}" }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"201 Created\", () => pm.expect(pm.response.code).to.eql(201));",
+          "const b = pm.response.json();",
+          "pm.environment.set(\"siteId\", b.site.id);"
+        ] } }
+      ]
+    },
+    {
+      "name": "02 · SITE · Crear de nuevo (409)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/sites", "host": ["{{baseUrl}}"], "path": ["api", "sites"] },
+        "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://www.chile.gob.cl\"\n}" }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"409 Conflict por url duplicada\", () => pm.expect(pm.response.code).to.eql(409));"
+        ] } }
+      ]
+    },
+    {
+      "name": "03 · SITE · Crear inválido (400)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/sites", "host": ["{{baseUrl}}"], "path": ["api", "sites"] },
+        "body": { "mode": "raw", "raw": "{\n  \"url\": \"no-es-una-url\"\n}" }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"400 Bad Request\", () => pm.expect(pm.response.code).to.eql(400));"
+        ] } }
+      ]
+    },
+    {
+      "name": "04 · SITE · Leer lista (200)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/sites", "host": ["{{baseUrl}}"], "path": ["api", "sites"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"200 y el creado está en la lista\", () => {",
+          "  pm.expect(pm.response.code).to.eql(200);",
+          "  const list = pm.response.json().sites.map(s => s.id);",
+          "  pm.expect(list).to.include(pm.environment.get(\"siteId\"));",
+          "});"
+        ] } }
+      ]
+    },
+    {
+      "name": "05 · SITE · Actualizar (200)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/sites/{{siteId}}", "host": ["{{baseUrl}}"], "path": ["api", "sites", "{{siteId}}"] },
+        "body": { "mode": "raw", "raw": "{\n  \"notas\": \"Revisar cookies de terceros y retención\"\n}" }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"200 OK y notas persistidas\", () => {",
+          "  pm.expect(pm.response.code).to.eql(200);",
+          "  pm.expect(pm.response.json().site.notas).to.eql(\"Revisar cookies de terceros y retención\");",
+          "});"
+        ] } }
+      ]
+    },
+    {
+      "name": "06 · SITE · Inexistente (404)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/sites/noexiste123", "host": ["{{baseUrl}}"], "path": ["api", "sites", "noexiste123"] },
+        "body": { "mode": "raw", "raw": "{\n  \"notas\": \"x\"\n}" }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"404 Not Found\", () => pm.expect(pm.response.code).to.eql(404));"
+        ] } }
+      ]
+    },
+    {
+      "name": "07 · ANALYSIS · Crear con motor real (201)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/analyses", "host": ["{{baseUrl}}"], "path": ["api", "analyses"] },
+        "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://www.chile.gob.cl\",\n  \"siteId\": \"{{siteId}}\",\n  \"frameworkIds\": [\"CL-1928\", \"CL-21719\", \"GDPR\"]\n}" },
+        "description": "Ejecuta el motor de análisis real (1–5 s) y persiste el resultado. Guarda analysisId automáticamente."
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"201 Created\", () => pm.expect(pm.response.code).to.eql(201));",
+          "const b = pm.response.json();",
+          "pm.environment.set(\"analysisId\", b.analysis.id);",
+          "pm.test(\"score entre 0 y 100\", () => pm.expect(b.analysis.score).to.be.within(0, 100));"
+        ] } }
+      ]
+    },
+    {
+      "name": "08 · ANALYSIS · Borrar sitio con análisis (409)",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/api/sites/{{siteId}}", "host": ["{{baseUrl}}"], "path": ["api", "sites", "{{siteId}}"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"409: la base protege el análisis\", () => pm.expect(pm.response.code).to.eql(409));"
+        ] } }
+      ]
+    },
+    {
+      "name": "09 · ANALYSIS · Leer detalle (200)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/analyses/{{analysisId}}", "host": ["{{baseUrl}}"], "path": ["api", "analyses", "{{analysisId}}"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"200 y payload presente\", () => {",
+          "  pm.expect(pm.response.code).to.eql(200);",
+          "  pm.expect(pm.response.json().analysis.payload).to.exist;",
+          "});"
+        ] } }
+      ]
+    },
+    {
+      "name": "10 · ANALYSIS · Actualizar (200)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/analyses/{{analysisId}}", "host": ["{{baseUrl}}"], "path": ["api", "analyses", "{{analysisId}}"] },
+        "body": { "mode": "raw", "raw": "{\n  \"notas\": \"Prioridad: planes de retención\",\n  \"revisado\": true\n}" }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"200 OK y revisado=true\", () => {",
+          "  pm.expect(pm.response.code).to.eql(200);",
+          "  pm.expect(pm.response.json().analysis.revisado).to.eql(true);",
+          "});"
+        ] } }
+      ]
+    },
+    {
+      "name": "11 · ANALYSIS · Inexistente (404)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/analyses/PS-NOEXISTE", "host": ["{{baseUrl}}"], "path": ["api", "analyses", "PS-NOEXISTE"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"404 Not Found\", () => pm.expect(pm.response.code).to.eql(404));"
+        ] } }
+      ]
+    },
+    {
+      "name": "12 · ANALYSIS · Eliminar (204)",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/api/analyses/{{analysisId}}", "host": ["{{baseUrl}}"], "path": ["api", "analyses", "{{analysisId}}"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"204 No Content\", () => pm.expect(pm.response.code).to.eql(204));"
+        ] } }
+      ]
+    },
+    {
+      "name": "13 · ANALYSIS · Confirmar borrado (404)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/analyses/{{analysisId}}", "host": ["{{baseUrl}}"], "path": ["api", "analyses", "{{analysisId}}"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"404: el dato ya no existe (persistencia real)\", () => pm.expect(pm.response.code).to.eql(404));"
+        ] } }
+      ]
+    },
+    {
+      "name": "14 · SITE · Eliminar ahora sí (204)",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/api/sites/{{siteId}}", "host": ["{{baseUrl}}"], "path": ["api", "sites", "{{siteId}}"] }
+      },
+      "event": [
+        { "listen": "test", "script": { "exec": [
+          "pm.test(\"204 No Content\", () => pm.expect(pm.response.code).to.eql(204));"
+        ] } }
+      ]
+    },
+    {
+      "name": "15 · Limpieza (opcional) · GET sites final (200)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/sites", "host": ["{{baseUrl}}"], "path": ["api", "sites"] }
+      }
+    }
+  ]
+}

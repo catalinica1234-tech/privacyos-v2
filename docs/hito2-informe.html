@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>PRIVACYOS · Informe técnico Hito 2</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Segoe UI", "Inter", Arial, sans-serif; color: #1f2a24; font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1 { font-size: 22pt; margin: 0 0 6pt; }
+  h2 { font-size: 15pt; color: #1d5c43; border-bottom: 2px solid #1d5c43; padding-bottom: 3pt; margin: 22pt 0 8pt; }
+  h3 { font-size: 12pt; color: #17322a; margin: 14pt 0 5pt; }
+  p { margin: 5pt 0; }
+  code { font-family: Consolas, "Courier New", monospace; background: #eef3f0; padding: 1pt 3pt; border-radius: 3px; font-size: 9pt; }
+  pre { background: #f4f7f5; border: 1px solid #d7e2dc; border-radius: 6px; padding: 8pt 10pt; font-size: 8.5pt; overflow-x: auto; page-break-inside: avoid; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8pt 0; font-size: 9pt; page-break-inside: avoid; }
+  th { background: #1d5c43; color: #fff; text-align: left; padding: 4pt 6pt; }
+  td { border: 1px solid #cfdad4; padding: 3.5pt 6pt; vertical-align: top; }
+  tr:nth-child(even) td { background: #f2f6f4; }
+  .portada { text-align: center; page-break-after: always; padding-top: 40mm; }
+  .portada .sub { color: #5b6d64; font-size: 12pt; }
+  .portada .marca { color: #1d5c43; letter-spacing: 3px; font-size: 9pt; text-transform: uppercase; }
+  .kpi { display: inline-block; background: #e8f1ec; border: 1px solid #bcd5c8; border-radius: 6px; padding: 6pt 10pt; margin: 3pt; font-size: 9pt; }
+  .nota { background: #fdf6e3; border-left: 4px solid #c9a227; padding: 6pt 10pt; font-size: 9pt; margin: 8pt 0; page-break-inside: avoid; }
+  .solo { color: #44584f; font-style: italic; font-size: 9pt; }
+  ul, ol { margin: 4pt 0 4pt 16pt; padding: 0; }
+  li { margin: 2pt 0; }
+  .portada rew { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ PORTADA ══════════════ -->
+<div class="portada">
+  <div class="marca">INGT1003 · Evaluación de Transición</div>
+  <h1>PRIVACYOS — Informe Técnico<br>Hito 2: Backend, Base de Datos y API CRUD</h1>
+  <p class="sub">Identidad «Serenidad» · Plataforma de inteligencia para la privacidad digital</p>
+  <p style="margin-top: 18mm">
+    <span class="kpi"><b>Integrantes</b> — Catalina Romero (frontend) · Melisa Ibáñez (documentación) · Simón Salgado (arquitectura)</span>
+  </p>
+  <p><span class="kpi"><b>Stack</b> — Next.js 15 (App Router) · TypeScript · Prisma 6 · PostgreSQL (Supabase) · Zod</span></p>
+  <p><span class="kpi"><b>Evidencia</b> — 9 rutas REST · 21/21 verificaciones automáticas · despliegue en Vercel</span></p>
+  <p style="margin-top: 30mm" class="solo">Octubre 2026</p>
+</div>
+
+<!-- ══════════════ B1 ══════════════ -->
+<h2>1 · Cambios respecto al Hito 1 (requisito B1)</h2>
+
+<p>El Hito 1 entregó un producto con motor real de evidencia pero persistencia solo en
+<code>localStorage</code>. El Hito 2 añade el backend completo manteniendo la identidad visual y
+el motor intactos. Cambia <b>infraestructura</b>, no el producto visible.</p>
+
+<table>
+  <tr><th style="width:22%">Aspecto</th><th style="width:36%">Hito 1</th><th style="width:42%">Hito 2 (este informe)</th></tr>
+  <tr><td>Persistencia</td><td><code>localStorage</code> del navegador (frágil: se pierde al limpiar el navegador y no viaja entre equipos)</td><td><b>PostgreSQL real en Supabase</b> vía Prisma 6; el navegador conserva <code>localStorage</code> como <i>respaldo</i> cuando la API no responde</td></tr>
+  <tr><td>API</td><td>Solo <code>POST /api/analyze</code> (ejecuta el motor sin guardar)</td><td><b>9 rutas REST</b> para los recursos <code>sites</code> y <code>analyses</code> + <code>/api/assistant</code> (asistente explicativo con feature flag)</td></tr>
+  <tr><td>Códigos HTTP</td><td>200 / 400 / 403 / 504</td><td><b>201 · 200 · 204 · 400 · 403 · 404 · 409 · 500 · 502 · 503 · 504</b>, asignados por código de negocio (ver §2)</td></tr>
+  <tr><td>Capas</td><td>Motor aislado, validación Zod de entrada</td><td><b>route handler → servicio → repositorio → Prisma</b>, con contratos Zod compartidos y envolvente de error única</td></tr>
+  <tr><td>Frontend</td><td>Lee/escribe solo de forma local</td><td><b>Integrado a la API real</b> (historial, comparar, progreso, informe) con degradación con honor a localStorage</td></tr>
+  <tr><td>Asistente</td><td>No existe</td><td>Widget explicativo opcional: IA solo en servidor, guardas anti-invención, dictado por voz con Web Speech API</td></tr>
+</table>
+
+<p><b>Qué NO cambió (decisión consciente):</b> el motor de evidencia <code>1.0.0-sereno</code>,
+los contratos Zod del análisis, el sistema de diseño Serenidad (marfil/grafito/verde bosque/menta)
+y la maqueta de las pantallas. Toda la smoke visual del Hito 1 sigue funcionando idéntica;
+la base de datos se sumó debajo.</p>
+
+<h3>Estado del trabajo</h3>
+<p><span class="kpi">9 rutas REST</span>
+<span class="kpi">21/21 checks CRUD ✓</span>
+<span class="kpi">diff esquema ↔ BD = vacío</span>
+<span class="kpi">typecheck + lint 0 errores</span>
+<span class="kpi">Vercel Production + Preview</span></p>
+
+<!-- ══════════════ B2 ══════════════ -->
+<h2>2 · API REST: recursos y códigos HTTP (requisito B2)</h2>
+
+<h3>Recurso <code>sites</code> — servicios web registrados para revisión</h3>
+<table>
+  <tr><th>Método</th><th>Ruta</th><th>Cuerpo (ejemplo)</th><th>Éxito</th><th>Errores</th></tr>
+  <tr><td>POST</td><td><code>/api/sites</code></td><td><code>{"url":"https://www.gob.cl","nombre":"Portal Chile"}</code></td><td>201 + site</td><td>400 validación · 409 url duplicada (<code>CONFLICTO_URL</code>) · 500</td></tr>
+  <tr><td>GET</td><td><code>/api/sites</code></td><td>—</td><td>200 + lista</td><td>500</td></tr>
+  <tr><td>GET</td><td><code>/api/sites/{id}</code></td><td>—</td><td>200 + site</td><td>404 · 500</td></tr>
+  <tr><td>PATCH</td><td><code>/api/sites/{id}</code></td><td><code>{"notas":"revisar cookies de terceros"}</code></td><td>200 + site</td><td>400 · 404 · 500</td></tr>
+  <tr><td>DELETE</td><td><code>/api/sites/{id}</code></td><td>—</td><td>204 sin cuerpo</td><td>404 · <b>409</b> si tiene análisis (FK <code>RESTRICT</code>) · 500</td></tr>
+</table>
+
+<h3>Recurso <code>analyses</code> — análisis de privacidad (motor + persistencia)</h3>
+<table>
+  <tr><th>Método</th><th>Ruta</th><th>Cuerpo / query</th><th>Éxito</th><th>Errores</th></tr>
+  <tr><td>POST</td><td><code>/api/analyses</code></td><td><code>{"url":"…","siteId":"(opcional)","frameworkIds":["GDPR"]}</code></td><td>201 + análisis completo (corre el motor real y persiste)</td><td>400 · 403 guardas SSRF (<code>BLOQUEADO</code>) · 500 · 504</td></tr>
+  <tr><td>GET</td><td><code>/api/analyses</code></td><td>query <code>limit</code>, <code>siteId</code></td><td>200 + lista (orden <code>createdAt</code> desc)</td><td>500</td></tr>
+  <tr><td>GET</td><td><code>/api/analyses/{id}</code></td><td>id <code>PS-XXXXXX</code></td><td>200 + análisis</td><td>404 · 500</td></tr>
+  <tr><td>PATCH</td><td><code>/api/analyses/{id}</code></td><td><code>{"notas":"…","revisado":true}</code></td><td>200 + análisis</td><td>400 · 404 · 500</td></tr>
+  <tr><td>DELETE</td><td><code>/api/analyses/{id}</code></td><td>—</td><td>204 sin cuerpo</td><td>404 · 500</td></tr>
+</table>
+
+<h3>Endpoints complementarios</h3>
+<table>
+  <tr><th>Ruta</th><th>Descripción</th></tr>
+  <tr><td><code>POST /api/analyze</code></td><td>Endpoint heredado del Hito 1: ejecuta el motor <b>sin persistir</b>. Se conservó para poder probar el motor aislado.</td></tr>
+  <tr><td><code>POST /api/assistant</code></td><td>Asistente explicativo. Sin secretos en el cliente; deshabilitado sin <code>ASSISTANT_ENABLED=1</code> (503); cuando la IA falla responde 502/503 con mensaje amable y no rompe la app.</td></tr>
+</table>
+
+<h3>Envolvente de error única</h3>
+<pre><code>{
+  "ok": false,
+  "code": "CONFLICTO_URL",
+  "message": "Ya existe un sitio con esa URL.",
+  "hint":  "Usa PATCH /api/sites/{id} si quieres actualizarlo."
+}</code></pre>
+<p>Nunca se devuelven stack traces ni detalles internos. Criterio de
+<b>versionado</b>: exista un consumidor externo (API pública, móvil) o un cambio
+incompatible, se introduce <code>/api/v1/…</code>; hoy el consumidor es la propia SPA.</p>
+
+<p class="solo">Contrato completo y colección Postman de 15 peticiones encadenadas en
+<code>docs/api.md</code> y <code>docs/privacyos-hito2.postman_collection.json</code>.</p>
+
+<!-- ══════════════ B3 ══════════════ -->
+<h2>3 · Arquitectura en capas y recorrido de una petición (requisito B3)</h2>
+
+<h3>Capas del monolito modular</h3>
+<table>
+  <tr><th style="width:24%">Capa</th><th style="width:32%">Módulos</th><th>Responsabilidad</th></tr>
+  <tr><td>Route handlers<br><span class="solo">transporte HTTP</span></td><td><code>app/api/*/route.ts</code></td><td>Parsing, validación de cuerpo con Zod, elección del código HTTP. Sin lógica de negocio.</td></tr>
+  <tr><td>HTTP<br><span class="solo">utilities</span></td><td><code>lib/http.ts</code></td><td><code>ApiError</code> + envolvente única <code>{"ok","code","message","hint"}</code>; mapea excepciones a respuestas.</td></tr>
+  <tr><td>Servicios<br><span class="solo">reglas de negocio</span></td><td><code>lib/services/*.service.ts</code></td><td>Generación de id <code>PS-XXXXXX</code> con reintento ante colisión, ejecución del motor, política de borrado, guardas del asistente (feature flag, cuota, retries).</td></tr>
+  <tr><td>Repositorios<br><span class="solo">acceso a datos</span></td><td><code>lib/repositories/*.repository.ts</code></td><td>El único módulo que habla con Prisma. Cambiar la BD = cambiar solo aquí.</td></tr>
+  <tr><td>Base de datos</td><td>PostgreSQL (Supabase) vía <code>lib/db.ts</code> (singleton de Prisma)</td><td>Persistencia real; pool con <code>connection_limit</code> por plan.</td></tr>
+  <tr><td>Cliente web<br><span class="solo">SPA</span></td><td><code>lib/api-client.ts</code></td><td>Adaptador del frontend a la API; degrada a <code>localStorage</code> si la API no responde y avisa en la UI.</td></tr>
+</table>
+
+<h3>Recorrido: <code>POST /api/analyses</code> (petición → base de datos)</h3>
+<ol>
+  <li><b>Transporte:</b> el route handler de <code>app/api/analyses/route.ts</code> recibe el JSON y
+      valida el cuerpo (URL, formato, siteId opcional, frameworkIds) con contratos Zod de
+      <code>lib/contracts.ts</code>. Si falla → <code>400 VALIDACION</code>, sin llegar a la BD.</li>
+  <li><b>Servicio:</b> <code>analyses.service.ts</code> genera el id <code>PS-XXXXXX</code>
+      (alfabeto sin caracteres ambiguos), ejecuta el <b>motor real</b> sobre la URL (con las guardas
+      anti-SSRF del Hito 1) y arma el payload completo (hallazgos, evidencias, plan de acción).</li>
+  <li><b>Repositorio:</b> <code>analyses.repository.ts</code> llama a Prisma (<code>create</code>) —
+      si el <code>siteId</code> no existe, la FK lo impide: el servicio traduce <code>P2003</code> →
+      <code>400 VALIDACION</code>; si el id colisiona, reintenta con otro id
+      (<code>P2002</code> → nuevo intento, hasta 5 veces).</li>
+  <li><b>Base de datos:</b> PostgreSQL almacena la fila en <code>analyses</code>
+      (score, <code>riskLevel</code> nullable, payload JSON, relación con <code>sites</code>).</li>
+  <li><b>Respuesta:</b> <code>201</code> con el análisis completo en el mismo formato que consume
+      el informe del frontend (idéntico al formato localStorage: el informe y el historial no
+      distinguen el origen).</li>
+</ol>
+<p>Cualquier error lanzado por las capas internas es capturado en el handler y convertido en
+<code>ApiError</code>: salida siempre JSON uniforme, códigos HTTP correctos, nada de fugas internas.</p>
+
+<h3>Diagrama</h3>
+<p><img src="diagrama-arquitectura.png" style="max-width:100%; border:1px solid #cfdad4; border-radius:6px;" alt="Diagrama de arquitectura"></p>
+
+<!-- ══════════════ B4 ══════════════ -->
+<h2>4 · Modelo de datos y base real (requisito B4)</h2>
+
+<h3>Modelo Prisma</h3>
+<pre><code>model Site {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  nombre    String?
+  notas     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  analyses  Analysis[]
+  @@map("sites")
+}
+
+model Analysis {
+  id         String   @id            // formato PS-XXXXXX, asignado por el servicio
+  url        String
+  score      Int                     // 0..100
+  riskLevel  String?                 // "bajo"|"medio"|"alto"|"critico" — puede ser null (honesto)
+  payload    Json                    // análisis completo validado por Zod
+  notas      String?
+  revisado   Boolean  @default(false)
+  siteId     String?
+  site       Site?    @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([createdAt(sort: Desc)]) @@index([siteId]) @@map("analyses")
+}</code></pre>
+
+<h3>Decisiones del modelo</h3>
+<ul>
+  <li><b>id de <code>sites</code> = cuid</b>: aleatorio y seguro de adivinar; generado por Prisma.</li>
+  <li><b>id de <code>analyses</code> = <code>PS-XXXXXX</code></b>: conserva el formato que el motor
+      ya usaba en el Hito 1 para que historial e informe funcionen igual con datos locales o de la BD.
+      El id lo asigna el servicio (no la base) y reintenta ante colisión.</li>
+  <li><b>FK <code>siteId → sites.id</code> con <code>onDelete: Restrict</code></b>: es imposible
+      borrar un sitio con análisis asociados — la API responde <code>409</code> con
+      <code>code: "CONFLICTO_FK"</code> y una pista para revisar el análisis antes de borrar. Protege la integridad del historial.</li>
+  <li><b><code>riskLevel</code> nullable</b>: si el insuficiente nivel de evidencia no permite
+      clasificar riesgo, se guarda <code>null</code> en vez de inventar categorías.</li>
+  <li><b><code>payload</code> JSON íntegro</b>: conservamos el informe completo (hallazgos,
+      evidencias, plan de acción) tal como lo consume el front, evitado cualquier transformación con
+      pérdida de información.</li>
+  <li><b>Índices</b>: <code>createdAt desc</code> (el historial pagina lo más reciente) y
+      <code>siteId</code> (filtro por sitio).</li>
+</ul>
+
+<h3>Base de datos real</h3>
+<table>
+  <tr><th style="width:30%">Aspecto</th><th>Detalle</th></tr>
+  <tr><td>Proveedor</td><td><b>Supabase</b> (PostgreSQL 15 gestionado, plan gratuito). Pool de conexiones con el endpoint <code>*.pooler.supabase.com</code>.</td></tr>
+  <tr><td>Creación del esquema</td><td>Doble vía para reproducibilidad: script SQL <code>db/init.sql</code> + migración baseline <code>prisma/migrations/20261026000000_init</code>.</td></tr>
+  <tr><td>Verificación de coincidencia</td><td><code>prisma migrate diff --from-url … --to-schema-datamodel …</code> ⇒ <b>diff vacío</b>: la base coincide exactamente con el modelo.</td></tr>
+  <tr><td>Diagrama ER</td><td><code>db/erd.mmd</code> (Mermaid) y guía en <code>db/README.md</code>.</td></tr>
+  <tr><td>Credenciales</td><td>Todas en variables de entorno <code>DATABASE_URL</code> (Vercel type <i>Secret/Hidden</i>); plantilla sin secretos en <code>.env.example</code>; <code>.gitignore</code> excluye <code>.env.local</code>. Se rota la contraseña una vez expuesta accidentalmente durante el desarrollo (lección documentada).</td></tr>
+</table>
+
+<h3>Evidencia automática: <code>scripts/test-crud.mjs</code></h3>
+<p>Prueba de caja negra contra el servidor real (21 verificaciones, crea y borra sus propios datos —
+no ensucia la base):</p>
+<table>
+  <tr><th style="width:28%">Grupo</th><th>Qué verifica</th></tr>
+  <tr><td>SITE (10)</td><td>201 al crear · id devuelto · lista 200 · el creado aparece · PATCH 200 · notas persistidas · duplicado 409 · inválido 400 · PATCH inexistente 404 · <b>GET tras relanzar sigue con datos (persistencia CRUDA)</b></td></tr>
+  <tr><td>ANALYSIS (11)</td><td>201 con motor real · formato de id <code>PS-XXXXXX</code> · score 0..100 en BD · lista por <code>?siteId</code> · detalle 200 · payload con hallazgos/evidencias · PATCH notas+revisado · 404 inexistente · DELETE 204 · <b>tras DELETE la lectura da 404</b> · DELETE del sitio limpieza</td></tr>
+</table>
+<p>Resultado en el build de producción con la base real: <b>21 ✓ · 0 ✗</b>.</p>
+
+<!-- ══════════════ B5 ══════════════ -->
+<h2>5 · Fuentes y referencias técnicas (requisito B5)</h2>
+<ol>
+  <li><b>Prisma ORM</b> — documentación oficial (esquema, migraciones, errores de cliente P2002/P2003/P2025): <code>prisma.io/docs</code>.</li>
+  <li><b>Next.js 15</b> — App Router, Route Handlers, runtime Node y <code>maxDuration</code>: <code>nextjs.org/docs</code>.</li>
+  <li><b>PostgreSQL</b> — documentación oficial; integridad referencial y claves foráneas: <code>postgresql.org/docs</code>.</li>
+  <li><b>Supabase</b> — documentación del pool de conexiones (pooler) y conexión segura a Postgres: <code>supabase.com/docs</code>.</li>
+  <li><b>Zod</b> — parseo de contratos compartidos: <code>zod.dev</code>.</li>
+  <li><b>RFC 9110 · HTTP Semantics</b> — significado normativo de los códigos de estado usados (201 Created, 204 No Content, 400, 404, 409, 502, 503, 504): <code>httpwg.org</code>/<code>rfc-editor.org/rfc/rfc9110</code>.</li>
+  <li><b>OWASP ASVS / Cheat Series</b> — validación de entradas y errores de API (usado como guía, no como prueba): <code>owasp.org</code>.</li>
+  <li><b>Ley 21.719 (Chile)</b> — publicada 13-DIC-2024, en vigor 01-DIC-2026 ([verificada en LeyChile](https://www.leychile.cl/leychile/navegar?idNorma=1209272)); marco preparatorio del producto junto a Ley 19.628.</li>
+  <li><b>RGPD (UE) 2016/679</b> — relación normativa indicativa del catálogo: <code>eur-lex.europa.eu</code>.</li>
+  <li><b>MDN — Web Speech API</b> (dictado por voz del asistente, en el navegador): <code>developer.mozilla.org/docs/Web/API/Web_Speech_API</code>.</li>
+</ol>
+
+<!-- ══════════════ A2 ══════════════ -->
+<h2>6 · Justificación de la tecnología (requisito A2)</h2>
+
+<h3>Criterios de selección</h3>
+<table>
+  <tr><th>Criterio</th><th>Peso</th><th>¿Cómo se evaluó?</th></tr>
+  <tr><td>Costo real</td><td>alto</td><td>tengo algo de presupuesto cero; cada servicio elegido tiene capa gratuita estable</td></tr>
+  <tr><td>Alinear con lo ya hecho</td><td>alto</td><td>el Hito 1 ya es Next.js + TypeScript; la BD debía integrarse sin reescribir</td></tr>
+  <tr><td>Simplicidad de operación</td><td>alto</td><td>3 estudiantes; cero DevOps dedicado o mínimo</td></tr>
+  <tr><td>Corrección de la API</td><td>medio</td><td>soporte de códigos HTTP correctos, validación en runtime y errores tipados</td></tr>
+  <tr><td>Portabilidad</td><td>medio</td><td>que se pueda montar en otro equipo con <code>npm install</code> + <code>.env</code></td></tr>
+</table>
+
+<h3>Comparativa y costos estimados</h3>
+<table>
+  <tr><th>Decisión</th><th>Alternativas descartadas</th><th>Justificación</th><th>Costo estimado</th></tr>
+  <tr><td><b>Next.js 15 + Route Handlers</b> para el backend</td><td>Servidor aparte (Express/Fastify), datos "sin servidor" en el cliente</td><td>Un solo artefacto para SPA + API (menos superficie de despliegue). Express nos obligaría a CORS y despliegue separado; localStorage ya falló en Hito 1.</td><td>$0 (Vercel Hobby)</td></tr>
+  <tr><td><b>PostgreSQL vía Supabase</b></td><td>MongoDB Atlas / SQLite / MySQL (PlanetScale)</td><td>PostgreSQL es relacional (sites ↔ analyses son entidades fijas y FK real de integridad). Supabase ofrece plan free estable y pooler; SQLite no cumple "persistencia real en servidor"; PlanetScale eliminó su plan free.</td><td>$0 (plan free, 500 MB, pausa tras inactividad)</td></tr>
+  <tr><td><b>Prisma 6</b></td><td>Drizzle, TypeORM, SQL crudo</td><td>Migraciones auditables, tipos generados, diff verificable contra la BD, errores de dominio (P2002/P2003) que mapeamos a códigos HTTP.</td><td>$0 (Apache-2.0)</td></tr>
+  <tr><td><b>Zod</b> compartido front ↔ API</td><td>Solo tipos TypeScript / class-validator</td><td>Validación en runtime en el borde del sistema, con un solo contrato para ambas partes (evita drift entre lo que envía UI y lo que acepta la API).</td><td>$0</td></tr>
+  <tr><td><b>IA del asistente: API cloud con feature flag</b></td><td>Modelo self-hosted en el despliegue</td><td>Ver §8. Un modelo propio en producción exige GPU/infra que escapa del alcance del hito; la API costs $0 en tier gratuito con llave solo en servidor.</td><td>$0 (tier free) — costo marginal por token si escala</td></tr>
+</table>
+
+<h3>Costo total estimado del hito</h3>
+<p><span class="kpi">Infra: <b>$0/mes</b> (Vercel Hobby + Supabase free + Postman free)</span>
+<span class="kpi">Licencias: <$0 (todas open source)</span>
+<span class="kpi">Riesgo de despeje: plan free pausar Supabase por inactividad → operación documentada en README (despertar el proyecto) y degradación con honor en el front</span></p>
+
+<h3>Limitaciones reconocidas</h3>
+<ul>
+  <li>El plan free de Supabase pausa la base tras inactividad (mitigado con la degradación del front).</li>
+  <li>Vercel Hobby limita <code>maxDuration</code> (configurado a 60 s para el asistente, 30 s motor).</li>
+  <li>Sin autenticación: los recursos API son de producto, no de sesión. Expondría borrado abierto
+      en un entorno multiusuario — fuera de alcance declarado del hito, documentado al final del §2.</li>
+</ul>
+
+<!-- ══════════════ A3 ══════════════ -->
+<h2>7 · ¿Por qué un monolito modular y cómo se evalúa el código? (requisito A3)</h2>
+
+<h3>Decisión estructural</h3>
+<p>PRIVACYOS es un <b>monolito modular</b>: un único despliegue (aplicación Next.js) con
+<b>fronteras rígidas</b> entre capas internas. Elegimos el punto medio entre "un solo archivo
+gigante" y "microservicios":</p>
+<table>
+  <tr><th>Opción</th><th>Pros</th><th>Contras para un equipo de 3</th></tr>
+  <tr><td>Monolito anárquico</td><td>rápido de empezar</td><td>código acoplado; imposible probar por capas; nos frenaría después</td></tr>
+  <tr><td><b>Monolito modular (elegido)</b></td><td>despliegue simple + capas con fronteras + testeable caja negra</td><td>requiere disciplina en imports (documentada en README)</td></tr>
+  <tr><td>Microservicios</td><td>escalado por servicio</td><td>3 repos/despliegues, CORS, versionado multi; sobrevisión total hoy</td></tr>
+</table>
+
+<h3>Escenario de revisión de diseño (cómo probarías el código)</h3>
+<p>En una corrección de diseño pedimos: <i>«Implementa este endpoint nuevo: <code>GET
+/api/sites/{id}/informe</code> que devuelva el último análisis del sitio»</i>. Un revisor puede
+verificar, en menos de 15 minutos:</p>
+<ol>
+  <li><b>Dónde cae el cambio</b> — verificar que la lógica vive en
+      <code>analyses.service.ts</code> y <code>analyses.repository.ts</code>, no en el route handler.
+      La firma de las capas lo dice sola.</li>
+  <li><b>Contrato primero</b> — verificar que se documenta en <code>docs/api.md</code> antes de
+      codear (como hicimos con todo el CRUD).</li>
+  <li><b>Códigos HTTP</b> — verificar que sitio inexistente da 404 y que un sitio con historial
+      vacío da 200 con lista vacía. La envolvente de error y <code>test-crud.mjs</code> lo cubren.</li>
+  <li><b>Prueba de regresión</b> — verificar que se agrega el caso a <code>scripts/test-crud.mjs</code>
+      en el mismo commit.</li>
+</ol>
+<p class="solo">Las fronteras hacen que la revisión sean preguntas pequeñas y verificables,
+no debates de estilo.</p>
+
+<!-- ══════════════ IA ══════════════ -->
+<h2>8 · Asistente de IA explicativo: propuesta elegida, guardas y honestidad</h2>
+
+<div class="nota"><b>Declaración de alcance:</b> el asistente <b>explica</b> el propio informe
+de PRIVACYOS y <b>no</b> asesora formalmente sobre normativa. Toda respuesta del asistente se
+presenta como "explicación, no asesoría legal". Determinar cumplimiento legal no es y no será
+una función del producto.</div>
+
+<h3>Propuesta comparada</h3>
+<table>
+  <tr><th>Opción</th><th>Descripción</th><th>Ventajas</th><th>Desventajas</th><th>¿Elegida?</th></tr>
+  <tr><td><b>A · Sin asistente</b></td><td>Solo glosario estático</td><td>Cero riesgo, cero costo</td><td>No responde preguntas del usuario; no usa la IA disponible</td><td>—</td></tr>
+  <tr><td><b>B · Plantillas de texto pre-escritas</b></td><td>Explicaciones fijas por hallazgo</td><td>Predecible 100%</td><td>Rígida: no atiende la pregunta concreta; puede contradecir el informe si este cambia</td><td>—</td></tr>
+  <tr><td><b>C · API cloud con asistente limitado al JSON del informe (elegida)</b></td><td><code>/api/assistant</code> recibe la pregunta + el JSON del informe y una reglamenta ancla; responde ≤ 60 palabras en lenguaje claro, marcada como explicación</td><td>Respuesta contextual y breve; el modelo solo cita lo que ya está en el informe; llave solo en servidor; apagable con flag</td><td>Depende de proveedor externo (mitigado con fallback y mensajes amables); posible saturación del tier free</td><td>✔</td></tr>
+  <tr><td><b>D · Modelo auto-hospedado (self-hosted) con fine-tuning</b></td><td>Desplegar un LLM propio (p.ej. LoRA cuantizado en GPU)</td><td>Independencia total; es la vía si la universidad pidiera "entrenar pesos" a futuro</td><td>Costo/infra GPU fuera del alcance del hito; mantenimiento experto</td><td>Futuro (hoja de ruta)</td></tr>
+</table>
+
+<h3>Comparativa resumida (criterios de la docente)</h3>
+<table>
+  <tr><th>Criterio</th><th>A</th><th>B</th><th>C (elegida)</th><th>D</th></tr>
+  <tr><td>Utilidad real para el usuario</td><td>Baja</td><td>Media</td><td>Alta</td><td>Alta</td></tr>
+  <tr><td>Riesgo de invención (alucinación)</td><td>Nulo</td><td>Nulo</td><td>Bajo (restricciones al JSON + brevedad + disclaimer)</td><td>Medio</td></tr>
+  <tr><td>Costo/infra</td><td>Nulo</td><td>Nulo</td><td>Cero (tier free)</td><td>Alto</td></tr>
+  <tr><td>Factibilidad esta semana</td><td>✓</td><td>✓</td><td>✓ (hecha y verificada)</td><td>✗ fuera de alcance</td></tr>
+</table>
+
+<h3>Guardas anti-invención implementadas</h3>
+<ul>
+  <li><b>Prompt de sistema de 8 reglas:</b> máximo 3 frases; explica términos técnicos con lenguaje
+      simple; usa <b>solo</b> la evidencia del JSON; si no está, lo declara; nunca afirma
+      cumplimiento o incumplimiento legal; cierra con una acción concreta; marca la respuesta como
+      «no es asesoría legal»; llama a revisión humana si el usuario lo necesita.</li>
+  <li><b>Claude de contexto:</b> solo JSON automáticamente recortado (hallazgos + score + riesgos),
+      no el HTML crudo; brevedad reforzada al final del turno del usuario (≤ 60 palabras).</li>
+  <li><b>Feature flag server-side:</b> sin <code>ASSISTANT_ENABLED=1</code>, la ruta no existe para el mundo (503 documentado).</li>
+  <li><b>Llave solo en servidor</b> (<code>GEMINI_API_KEY</code> nunca viaja al navegador) y
+      <b>códigos 502/503</b> con mensaje amable y contacto si la IA no está disponible — la app
+      sigue funcionando sin el asistente.</li>
+  <li><b>Fallback de modelos</b> (primario → alternativo → terciario, 30 s de timeout cada uno),
+      de forma que la saturación del proveedor degrade con gracia.</li>
+</ul>
+
+<h3>Dictado por voz</h3>
+<p>El widget acepta dictado con la <b>Web Speech API nativa del navegador</b> (es-CL):
+sin proveedores externos, sin costos y sin datos de voz que salgan del dispositivo. El texto
+dictado va a la caja como si fuese tipeado, con botón de envío propio; si el navegador no
+soporta la API, el control simplemente no aparece (degradación limpia).</p>
+
+<h3>«Entrenar la IA»: una distinción honesta</h3>
+<div class="nota">
+<b>Entrenar ≠ integrar.</b> Esta iteración <b>entrena la conducta</b> del modelo, no sus pesos:
+le damos reglas de sistema, contexto cerrado al JSON del informe, tono, brevedad y guardas —
+la conducta se ajusta por <i>instrumentación</i>, sin tocar los pesos. <b>Entrenar los pesos</b>
+(fine-tuning, p. ej. LoRA) es la vía si el curso lo exige en su momento: es técnicamente
+posible pero requiere infraestructura de GPU que no está disponible hoy en el equipo; dejamos
+documentada la distinción para que la evaluación vea qué se hizo y qué queda como hoja de ruta.
+Ver §8, opción D.</div>
+
+<!-- ══════════════ Cierre ══════════════ -->
+<h2>9 · Definición de listo (DoD) del Hito 2</h2>
+<table>
+  <tr><th>Requisito</th><th>Medio de verificación</th><th>Estado</th></tr>
+  <tr><td>2 recursos CRUD completos (sites, analyses)</td><td><code>scripts/test-crud.mjs</code> → 21 ✓ · 0 ✗ contra la BD real</td><td>✔</td></tr>
+  <tr><td>Persistencia real (no memoria ni solo localStorage)</td><td>PostgreSQL/Supabase; GET tras relanzar mantiene datos; diff esquema↔BD vacío</td><td>✔</td></tr>
+  <tr><td>Códigos HTTP correctos y errores uniformes</td><td>envolvente <code>{"ok","code","message","hint"}</code>; checks de 201/200/204/400/404/409</td><td>✔</td></tr>
+  <tr><td>Secretos fuera del repo + <code>.env.example</code></td><td><code>.gitignore</code> excluye <code>.env.local</code>; Vercel las trata como Secret/Hidden; plantilla sin secretos</td><td>✔</td></tr>
+  <tr><td>Levantar en otro equipo</td><td>README: <code>npm install</code> + <code>.env</code> + <code>prisma generate</code> + migración o <code>db/init.sql</code></td><td>✔</td></tr>
+  <tr><td>Colección API importable</td><td><code>docs/privacyos-hito2.postman_collection.json</code> (15 peticiones encadenadas)</td><td>✔</td></tr>
+  <tr><td>Sitios/Analyses legibles desde el SPA</td><td>historial · comparar · progreso · informe integrados con degradación con honor</td><td>✔</td></tr>
+</table>
+
+<p class="solo">Informe generado por el equipo PRIVACYOS · Catalina Romero, Melisa Ibáñez y Simón Salgado · Octubre 2026.</p>
+
+</body>
+</html>

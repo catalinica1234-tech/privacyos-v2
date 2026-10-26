@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRightLeft, FileText, PlayCircle, ShieldCheck } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
 import { getHistory } from "@/lib/store";
+import { analisisRemoto } from "@/lib/api-client";
 import { formatDate, riesgoPillTone, scoreTone, severityLabels } from "@/lib/utils";
 import { EmptyState, LinkBtn, Meter, Pill } from "@/components/ui";
 
@@ -22,19 +23,31 @@ function CompararInner() {
   const ids = (params.get("ids") ?? "").split(",").filter(Boolean);
   const [ready, setReady] = useState(false);
   const [history, setHistory] = useState<Analysis[]>([]);
+  const [remotas, setRemotas] = useState<Record<string, Analysis>>({});
 
   useEffect(() => {
-    setHistory(getHistory());
+    const local = getHistory();
+    setHistory(local);
     setReady(true);
+    // Fallback servidor: los ids seleccionados que no estén en este navegador
+    // se piden a la base de datos (comparar entre equipos/persistencia real).
+    const faltan = ids.filter((id) => /^PS-[A-Z0-9]{6}$/.test(id) && !local.some((x) => x.id === id));
+    faltan.forEach(async (id) => {
+      const a = await analisisRemoto(id);
+      if (a) setRemotas((prev) => ({ ...prev, [id]: a }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [a, b] = useMemo(
-    () => ids.map((id) => history.find((x) => x.id === id) ?? (id === "PS-SAMPLE" ? { ...sampleRef } : null)),
+    () => ids.map((id) => history.find((x) => x.id === id) ?? remotas[id] ?? (id === "PS-SAMPLE" ? { ...sampleRef } : null)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ids.join(","), history, ready],
+    [ids.join(","), history, remotas, ready],
   );
 
-  if (!ready) return <div className="skeleton h-72" />;
+  if (!ready || ids.some((x) => x && !history.some((h) => h.id === x) && remotas[x] === undefined && x !== "PS-SAMPLE" && /^PS-[A-Z0-9]{6}$/.test(x))) {
+    return <div className="skeleton h-72" />;
+  }
 
   if (!a || !b) {
     return (

@@ -1,0 +1,21 @@
+erDiagram
+    SITES ||..o{ ANALYSES : "analyses.siteId FK"
+    SITES {
+        string id PK "cuid"
+        string url UK "única"
+        string nombre "opcional"
+        string notas "opcional"
+        datetime createdAt
+        datetime updatedAt
+    }
+    ANALYSES {
+        string id PK "PS-XXXXXX asignado por el servicio"
+        string url
+        int score "0..100"
+        string riskLevel "bajo|medio|alto"
+        json payload "contrato completo Zod"
+        string notas "opcional"
+        bool revisado "default false"
+        datetime createdAt "índice DESC"
+        datetime updatedAt
+    }

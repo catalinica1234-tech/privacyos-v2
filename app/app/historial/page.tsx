@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Archive, ArrowRightLeft, FileText, PlayCircle, ShieldCheck, Trash2, TriangleAlert } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
 import { clearHistory, deleteAnalysis, getHistory } from "@/lib/store";
+import { eliminarRemoto, listarRemotos, summaryAAnalisis } from "@/lib/api-client";
 import { formatDate, riesgoPillTone, scoreTone, severityLabels } from "@/lib/utils";
 import { EmptyState, LinkBtn, Meter, Modal, Pill } from "@/components/ui";
 
@@ -13,20 +14,42 @@ export default function HistorialPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [list, setList] = useState<Analysis[]>([]);
+  const [remotos, setRemotos] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string[]>([]);
   const [toDelete, setToDelete] = useState<Analysis | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [apiOk, setApiOk] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setList(getHistory());
+    const local = getHistory();
+    setList(local);
     setReady(true);
+    // La base de datos se consulta en paralelo: su lista se une con la local
+    // (sin duplicar) y si no responde, el historial local sigue funcionando.
+    listarRemotos().then((remotas) => {
+      if (!remotas) { setApiOk(false); return; }
+      setApiOk(true);
+      const ids = new Set(remotas.map((r) => r.id));
+      setRemotos(ids);
+      setList((prev) => {
+        const vistos = new Set(prev.map((a) => a.id));
+        const desdeServidor = remotas.filter((r) => !vistos.has(r.id)).map(summaryAAnalisis);
+        return [...prev, ...desdeServidor];
+      });
+    });
   }, []);
 
   const toggleSelect = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= 2 ? [prev[1], id] : [...prev, id]));
 
   const remove = (a: Analysis) => {
-    setList(deleteAnalysis(a.id));
+    if (remotos.has(a.id)) {
+      setList((prev) => prev.filter((x) => x.id !== a.id));
+      setRemotos((prev) => { const n = new Set(prev); n.delete(a.id); return n; });
+      eliminarRemoto(a.id); // DELETE real en el servidor (204); si falla, la vista ya lo sacó
+    } else {
+      setList(deleteAnalysis(a.id));
+    }
     setSelected((prev) => prev.filter((x) => x !== a.id));
     setToDelete(null);
   };
@@ -49,7 +72,7 @@ export default function HistorialPage() {
           <p className="eyebrow">Historial</p>
           <h1 className="mt-1 font-disp text-2xl font-semibold tracking-tight">Análisis de este navegador</h1>
           <p className="mt-2 max-w-lg text-[13px] text-muted">
-            Persistencia local (localStorage), sin cuentas ni base de datos en esta fase. Selecciona dos análisis para compararlos.
+            Análisis guardados en la base de datos del servidor y, complementariamente, en este navegador. Selecciona dos para compararlos.
           </p>
         </div>
         {list.length > 0 ? (
@@ -90,7 +113,7 @@ export default function HistorialPage() {
                   <Link href={`/app/informe/${a.id}`} className="flex items-center gap-2 font-disp text-[14.5px] font-semibold hover:text-bosque">
                     {a.input.host} <FileText className="h-3.5 w-3.5 text-muted" />
                   </Link>
-                  <p className="text-[11.5px] text-muted">{formatDate(a.createdAt)} · {a.id} · {a.findings.length} hallazgos</p>
+                  <p className="text-[11.5px] text-muted">{formatDate(a.createdAt)} · {a.id}{apiOk && remotos.has(a.id) ? " · servidor" : ""}{a.findings.length > 0 ? ` · ${a.findings.length} hallazgos` : ""}</p>
                 </div>
                 <div className="flex flex-none items-center gap-2">
                   <Pill tone={riesgoPillTone[a.riskLevel ?? "bajo"]}>{severityLabels[a.riskLevel ?? "bajo"]}</Pill>
