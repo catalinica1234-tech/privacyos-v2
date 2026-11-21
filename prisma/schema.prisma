@@ -68,3 +68,18 @@ model Analysis {
   @@index([siteId])
   @@map("analyses")
 }
+
+model QuoteRequest {
+  id           String   @id @db.Uuid
+  fingerprint  String
+  segment      String
+  name         String
+  email        String
+  organization String?
+  sites        String
+  need         String
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("quote_requests")
+}

@@ -126,7 +126,6 @@ export default function HistorialPage() {
                   <PlayCircle className="h-4 w-4 flex-none text-muted" aria-hidden="true" />
                 )}
                 <div className="min-w-0 flex-1">
-                  {a.dataMode === "sample" ? <Pill tone="pill-sample" className="mb-1">MUESTRA ILUSTRATIVA</Pill> : null}
                   <Link href={`/app/informe/${a.id}`} className="flex items-center gap-2 font-disp text-[14.5px] font-semibold hover:text-bosque">
                     {a.input.host} <FileText className="h-3.5 w-3.5 text-muted" aria-hidden="true" />
                   </Link>

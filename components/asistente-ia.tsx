@@ -41,6 +41,8 @@ function crearReconocedor(): Reconocedor | null {
   return new Ctor();
 }
 
+const SUGERIDAS_GENERALES = ["¿Qué es una cookie?", "¿Cómo se calcula el Privacy Score?", "¿Qué señales analiza el motor?"];
+
 const SUGERIDAS = [
   "¿Qué significa este resultado?",
   "¿Por qué debería importarme?",
@@ -70,10 +72,12 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
   }, []);
 
   const enviar = useCallback(async (p: string) => {
-    const pLimpia = p.trim();
+    const pLimpia = p.trim().slice(0, 600);
     if (pLimpia.length < 3 || efecto.tipo === "cargando") return;
+    const previous = lista.at(-1)?.quien === "usuario" ? lista.slice(0, -1) : lista;
+    const history = previous.slice(-6).map(({ quien, texto }) => ({ role: quien, text: texto.slice(0, 600) }));
     setPregunta("");
-    setLista((prev) => [...prev, { quien: "usuario", texto: pLimpia }]);
+    setLista([...previous.slice(-38), { quien: "usuario", texto: pLimpia }]);
     setEfecto({ tipo: "cargando", pregunta: pLimpia });
 
     const controller = new AbortController();
@@ -82,7 +86,7 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
       const res = await fetch("/api/assistant", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question: pLimpia, analysisId: analysis?.dataMode === "live" ? analysis.id : undefined }),
+        body: JSON.stringify({ question: pLimpia, history, analysisId: analysis?.dataMode === "live" ? analysis.id : undefined }),
         signal: controller.signal,
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; answer?: string; message?: string; hint?: string };
@@ -107,7 +111,7 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
     } finally {
       window.clearTimeout(timeout);
     }
-  }, [analysis, efecto.tipo]);
+  }, [analysis, efecto.tipo, lista]);
 
   function alternarDictado() {
     if (escuchando) {
@@ -126,14 +130,12 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
       for (let i = 0; e.results[i]; i++) {
         if (e.results[i].isFinal) textoFinal += e.results[i][0].transcript;
       }
-      setPregunta(textoFinal.trim());
+      setPregunta(textoFinal.trim().slice(0, 600));
     };
     rec.onerror = () => setEscuchando(false);
     rec.onend = () => {
       setEscuchando(false);
-      // Al terminar el dictado se envía automáticamente lo reconocido.
-      const t = textoFinal.trim();
-      if (t.length >= 3) void enviar(t);
+      // Permite revisar la transcripción antes de enviarla.
     };
     try { rec.start(); setEscuchando(true); } catch { setEscuchando(false); }
   }
@@ -161,7 +163,7 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
 
           {lista.length === 0 && efecto.tipo === "vacío" ? (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {SUGERIDAS.map((s) => (
+              {(analysis ? SUGERIDAS : SUGERIDAS_GENERALES).map((s) => (
                 <button key={s} onClick={() => enviar(s)} className={cnChip}>
                   {s}
                 </button>

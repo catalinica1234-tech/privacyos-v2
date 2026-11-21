@@ -4,7 +4,7 @@ import { AsistenteIA } from "@/components/asistente-ia";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Archive, FileText, PlayCircle, Radar, Sparkles, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowRight, Archive, FileText, PlayCircle, Radar, ShieldCheck, TriangleAlert } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
 import { analisisRemoto, listarRemotos, summaryAAnalisis } from "@/lib/api-client";
 import { formatDate, severityLabels, riesgoPillTone, scoreTone } from "@/lib/utils";
@@ -46,9 +46,9 @@ export default function DashboardPage() {
 
   const lastLive = history.find((a) => a.dataMode === "live") ?? null;
   const recent = history.slice(0, 5);
-  const riskCount = lastLive
+  const riskCount = lastLive?.dimensions.length
     ? lastLive.findings.filter((f) => !f.title.startsWith("Observación positiva")).length
-    : 0;
+    : null;
 
   return (
     <div className="grid gap-6">
@@ -59,6 +59,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <LinkBtn href="/app/nuevo" size="sm"><Radar className="h-3.5 w-3.5" />Nuevo análisis</LinkBtn>
+          <LinkBtn href="/app/sitios" variant="ghost" size="sm">Sitios</LinkBtn>
           <LinkBtn href="/app/historial" variant="ghost" size="sm"><Archive className="h-3.5 w-3.5" />Historial</LinkBtn>
         </div>
       </header>
@@ -93,9 +94,7 @@ export default function DashboardPage() {
                   <p className="font-disp text-5xl font-semibold tracking-tight tnum">{lastLive.score}</p>
                   <p className="text-[11px] text-muted">Privacy Score · sobre 100</p>
                 </div>
-                <Pill tone={riesgoPillTone[lastLive.riskLevel ?? "medio"]} className="self-start">
-                  Riesgo {severityLabels[lastLive.riskLevel ?? "medio"].toLowerCase()}
-                </Pill>
+                {lastLive.riskLevel ? <Pill tone={riesgoPillTone[lastLive.riskLevel]} className="self-start">Riesgo {severityLabels[lastLive.riskLevel].toLowerCase()}</Pill> : null}
               </div>
             </div>
 
@@ -118,7 +117,7 @@ export default function DashboardPage() {
               <LinkBtn href={`/app/nuevo?url=${encodeURIComponent(lastLive.input.url)}`} variant="subtle" size="sm">
                 Re-analizar este sitio
               </LinkBtn>
-              <span className="text-[12px] text-muted">{riskCount} hallazgos priorizados en el informe</span>
+              <span className="text-[12px] text-muted">{riskCount === null ? "Detalle del informe no disponible por ahora." : `${riskCount} hallazgos priorizados en el informe`}</span>
             </div>
           </section>
 
@@ -147,7 +146,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {a.dataMode === "sample" ? <Pill tone="pill-sample">MUESTRA ILUSTRATIVA</Pill> : null}
                     <Pill tone={riesgoPillTone[a.riskLevel ?? "bajo"]}>{severityLabels[a.riskLevel ?? "bajo"]}</Pill>
                     <Pill tone={scoreTone(a.score)}>{a.score}</Pill>
                   </div>
@@ -156,27 +154,15 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Muestra ilustrativa */}
-          <section className="card card-quiet flex flex-wrap items-center justify-between gap-4 p-5">
-            <div className="flex items-start gap-3">
-              <Sparkles className="mt-0.5 h-4 w-4 flex-none text-bosque" />
-              <div>
-                <p className="text-[13.5px] font-semibold">Informe de muestra <span className="pill pill-sample ml-1">MUESTRA ILUSTRATIVA</span></p>
-                <p className="mt-1 text-[12.5px] text-muted">Un análisis estático de ejemplo para explorar la estructura del informe sin conexión externa.</p>
-              </div>
-            </div>
-            <LinkBtn href="/app/informe/PS-SAMPLE" variant="ghost" size="sm">Ver muestra</LinkBtn>
-          </section>
         </>
       ) : (
         <EmptyState
           icon={<Radar className="h-6 w-6" />}
           title="Aún no hay análisis en este espacio de trabajo"
-          text="Analiza un sitio público para obtener tu primer informe con evidencia real, o explora el informe de muestra (ilustrativo, sin conexión)."
+          text="Analiza un sitio público para obtener tu primer informe con evidencia técnica."
           action={
             <div className="flex flex-wrap justify-center gap-3">
               <LinkBtn href="/app/nuevo"><Radar className="h-4 w-4" />Analizar el primer sitio</LinkBtn>
-              <LinkBtn href="/app/informe/PS-SAMPLE" variant="ghost">Ver informe ilustrativo</LinkBtn>
             </div>
           }
         />

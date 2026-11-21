@@ -21,20 +21,17 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "@/components/theme";
-import { Alert, LinkBtn, Meter, Pill, SectionHead } from "@/components/ui";
-import { sampleAnalysis } from "@/lib/sample";
+import { Alert, LinkBtn, Pill, SectionHead } from "@/components/ui";
+import { Quotes } from "@/components/quotes";
 import { FRAMEWORKS, frameworkList } from "@/lib/frameworks";
-import { severityLabels } from "@/lib/utils";
 
 /* ═════════════════════════════════════════════════════════════════
    LANDING COMERCIAL — Serenidad.
-   Todo dato visible proviene del dataset marcado como MUESTRA
-   ILUSTRATIVA o de hechos verificables (fechas oficiales leychile).
-   Sin clientes, métricas ni testimonios inventados.
+   Presentación del producto y acceso al motor de análisis real.
    ═════════════════════════════════════════════════════════════════ */
 
 function daysUntilVigencia(): number {
-  const target = new Date("2026-12-01T00:00:00");
+  const target = new Date("2026-12-01T00:00:00-03:00");
   const diff = target.getTime() - Date.now();
   return Math.max(0, Math.ceil(diff / 86_400_000));
 }
@@ -69,6 +66,7 @@ export function SiteHeader() {
     ["#como-funciona", "Cómo funciona"],
     ["#marcos", "Normativas"],
     ["#informe", "Informe"],
+    ["#cotizacion", "Planes"],
     ["#faq", "FAQ"],
   ] as const;
 
@@ -107,47 +105,44 @@ export function SiteHeader() {
   );
 }
 
-function HeroVisualMock() {
-  const a = sampleAnalysis;
+function HeroVisual() {
   return (
     <div className="relative">
-      <Pill tone="pill-sample" className="absolute -top-3 left-4 z-10">MUESTRA ILUSTRATIVA</Pill>
+      <Pill tone="pill-sample" className="absolute -top-3 left-4 z-10">ESCÁNER DE PRIVACIDAD</Pill>
       <div className="card p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-muted">Informe de ejemplo</p>
-            <p className="font-disp text-lg font-semibold">{a.input.host}</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted">Informe de privacidad</p>
+            <p className="font-disp text-lg font-semibold">Analiza un sitio público</p>
           </div>
-          <Pill tone="pill-med">{severityLabels[a.riskLevel ?? "medio"]}</Pill>
+          <Pill tone="pill-med">Análisis a demanda</Pill>
         </div>
         <div className="mt-5 flex items-end gap-4">
-          <p className="font-disp text-5xl font-semibold tracking-tight tnum">{a.score}</p>
+          <p className="font-disp text-5xl font-semibold tracking-tight tnum" aria-hidden="true">—</p>
           <div className="pb-1.5">
             <p className="text-[12px] font-medium text-[color:var(--c-bosque)]">Privacy Score</p>
-            <p className="text-[11px] text-muted">Sobre 100 · fórmula documentada</p>
+            <p className="text-[11px] text-muted">Disponible tras ejecutar el análisis</p>
           </div>
         </div>
         <div className="mt-5 grid gap-3">
-          {a.dimensions.filter((d) => d.evaluated).map((d) => (
-            <div key={d.id} className="grid grid-cols-[150px_1fr_34px] items-center gap-3">
-              <span className="text-[12.5px] text-muted">{d.label}</span>
-              <Meter value={d.value} sm />
-              <span className="tnum text-right text-[12px] font-medium">{d.value}</span>
+          {["Seguridad técnica", "Transparencia", "Terceros", "Gobernanza básica"].map(label => (
+            <div key={label} className="flex justify-between gap-3 text-[12.5px] text-muted">
+              <span>{label}</span><span>Pendiente de análisis</span>
             </div>
           ))}
         </div>
         <div className="mt-6 rounded-2xl bg-[color:var(--c-risk-med-soft)] p-4">
           <p className="text-[12.5px] font-medium text-[color:var(--c-risk-med)]">
-            {a.findings.length} hallazgos · prioridades P2–P4 · cada uno con evidencia y limitación declarada
+            Consulta las señales observadas, sus limitaciones y las acciones recomendadas.
           </p>
         </div>
-        <Link href="/app/informe/PS-SAMPLE" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-bosque">
-          Ver informe de ejemplo completo <ArrowRight className="h-3.5 w-3.5" />
+        <Link href="/app/nuevo" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-bosque">
+          Ejecutar un análisis <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
       <div className="card card-quiet absolute -bottom-6 -left-4 hidden items-center gap-2.5 p-3.5 sm:flex">
         <ShieldCheck className="h-4 w-4 text-menta" />
-        <p className="text-[12px]"><span className="font-semibold">Sin crawlers ni recolección agresiva</span> · solo la página inicial</p>
+        <p className="text-[12px]"><span className="font-semibold">Inspección de alcance acotado</span> · página inicial</p>
       </div>
     </div>
   );
@@ -164,10 +159,10 @@ function Hero() {
               <Scale className="h-3.5 w-3.5" />
               Ley 21.719 · entra en vigor el 01-DIC-2026
             </Pill>
-            <span className="text-[12px] font-medium text-muted">faltan {dias} días · texto oficial en LeyChile</span>
+            <span className="text-[12px] font-medium text-muted">{dias > 0 ? `faltan ${dias} días · ` : ""}texto oficial en LeyChile</span>
           </div>
           <h1 className="mt-6 font-disp text-4xl font-semibold tracking-tight sm:text-5xl lg:text-[54px] lg:leading-[1.05]">
-            Entiende la privacidad de tu sitio web <span className="text-bosque">antes de que la ley lo exija.</span>
+            Entiende la privacidad de tu sitio web <span className="text-bosque">con evidencia que puedes revisar.</span>
           </h1>
           <p className="lede mt-5 max-w-xl">
             PRIVACYOS inspecciona la página inicial de tu sitio web, observa evidencia técnica real — cabeceras de seguridad,
@@ -190,7 +185,7 @@ function Hero() {
             <span className="inline-flex items-center gap-1.5"><Scale className="h-3.5 w-3.5 text-bosque" />No es asesoría legal</span>
           </div>
         </div>
-        <HeroVisualMock />
+        <HeroVisual />
       </div>
     </section>
   );
@@ -306,48 +301,30 @@ function Marcos() {
 }
 
 function Informe() {
-  const a = sampleAnalysis;
-  const f1 = a.findings[0];
   return (
     <section id="informe" className="py-20">
       <div className="container mx-auto max-w-6xl px-5">
         <SectionHead eyebrow="Informe profesional" title="Un documento que directivos y equipos técnicos pueden usar el mismo día." text="Estructura de resumen ejecutivo → hallazgos con evidencia → plan de acción. Con las limitaciones declaradas al pie." />
         <div className="mt-10 grid gap-5 lg:grid-cols-[1fr_1fr]">
           <div className="card relative p-6">
-            <Pill tone="pill-sample" className="absolute -top-3 left-4">MUESTRA ILUSTRATIVA</Pill>
-            <p className="eyebrow">Hallazgo de ejemplo</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Pill tone="pill-high"><span className="font-semibold">{f1.status.replace("_", " ")}</span></Pill>
-              <Pill tone={`pill-${f1.severity === "alto" ? "high" : "med"}`}>Severidad: {severityLabels[f1.severity]}</Pill>
-              <span className="text-[12px] text-muted">Prioridad {f1.priority}</span>
+            <Pill tone="pill-sample" className="absolute -top-3 left-4">ESTRUCTURA DEL INFORME</Pill>
+            <p className="eyebrow">De la señal a la acción</p>
+            <h3 className="mt-3 font-disp text-lg font-semibold">Hallazgos con respaldo técnico</h3>
+            <p className="mt-2 text-[13.5px] leading-6 text-muted">
+              Tras el análisis, abre un hallazgo para ver su estado, la fuente de la evidencia y el alcance de la observación.
+            </p>
+            <div className="mt-4 rounded-xl bg-[color:var(--c-code-bg)] p-3">
+              <p className="text-[11px] font-semibold text-muted">Evidencia y limitaciones</p>
+              <p className="mt-1 text-[12px] text-muted">Fecha de observación, señal registrada y aspectos que requieren una revisión adicional.</p>
             </div>
-            <h3 className="mt-3 font-disp text-lg font-semibold">{f1.title}</h3>
-            <p className="mt-2 text-[13.5px] leading-6 text-muted">{f1.explanation}</p>
-            <div className="mt-4 grid gap-2.5">
-              {f1.evidenceIds.map((id) => {
-                const ev = a.evidence.find((e) => e.id === id);
-                if (!ev) return null;
-                return (
-                  <div key={id} className="rounded-xl bg-[color:var(--c-code-bg)] p-3">
-                    <p className="text-[11px] font-semibold text-muted">{id} · {ev.title}</p>
-                    <p className="mt-1 break-all text-[12px] text-muted">{ev.detail}</p>
-                    <p className="mt-1 text-[11px] text-muted">fuente: {ev.source}</p>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-[color:var(--c-bosque-soft)] p-3.5">
-              <ArrowRightLeft className="mt-0.5 h-4 w-4 flex-none text-bosque" />
-              <p className="text-[13px] leading-6"><span className="font-semibold text-bosque">Recomendación:</span> {f1.recommendation}</p>
-            </div>
-            <p className="mt-3 text-[11.5px] text-muted">Limitación: {f1.limitation}</p>
+            <LinkBtn href="/app/nuevo" size="sm" className="mt-4">Generar un informe</LinkBtn>
           </div>
 
           <div className="grid content-start gap-4">
             {[
               { icon: ListChecks, title: "Plan de acción con prioridades", text: "Recomendaciones ordenadas por urgencia (inmediata · 30 · 90 días · continua) con impacto y esfuerzo estimados cuando existen criterios suficientes." },
               { icon: ScrollText, title: "Resumen ejecutivo y limitaciones", text: "Cada informe declara qué NO se evaluó (p. ej., retención y minimización requieren revisión del contenido y del backend)." },
-              { icon: ArrowRightLeft, title: "Exportable y repetible", text: "Imprime o descarga el informe (PNG/MD/JSON) y re-analiza el mismo sitio cuando realices cambios para verificar efectos." },
+              { icon: ArrowRightLeft, title: "Exportable y repetible", text: "Imprime o descarga el informe (PDF mediante impresión, Markdown o JSON) y re-analiza el mismo sitio cuando realices cambios para verificar efectos." },
             ].map((x) => (
               <div key={x.title} className="card p-6">
                 <x.icon className="h-5 w-5 text-bosque" />
@@ -367,7 +344,10 @@ function Faq() {
     { q: "¿PRIVACYOS emite un juicio legal sobre mi organización?", a: "No. PRIVACYOS clasifica riesgos técnicos y señala relaciones indicativas con normas (Ley 19.628, Ley 21.719 y RGPD). No determina si una organización cumple la ley ni sustituye asesoría jurídica." },
     { q: "¿Qué alcanza a inspeccionar el análisis?", a: "La página inicial del destino: cabeceras HTTP de seguridad, cookies de la primera respuesta, el HTML limitado en bytes y robots.txt. No realiza crawling de rutas internas ni recolección agresiva." },
     { q: "¿Por qué aparece «información insuficiente» en lugar de un hallazgo?", a: "Por diseño honesto. La ausencia de evidencia no prueba incumplimiento. Cuando algo no puede determinarse (p. ej., retención de datos), el informe lo declara y recomienda el paso siguiente de revisión humana." },
-    { q: "¿La Ley 21.719 ya está vigente?", a: "Aún no al día de esta versión: se publicó el 13-DIC-2024 y según el texto oficial entra en vigor el 01-DIC-2026 (verificado en LeyChile). Hasta esa fecha rige transitoriamente la Ley 19.628. PRIVACYOS usa 21.719 como marco preparatorio y lo identifica así." },
+    { q: "¿Cuándo comienza la vigencia de las modificaciones de la Ley 21.719?", a: "LeyChile indica el 1 de diciembre de 2026. Las referencias del informe orientan una revisión técnica; la aplicación concreta de la normativa depende del contexto." },
+    { q: "¿Cómo se calcula el Privacy Score?", a: "Es el promedio ponderado de las dimensiones evaluadas, redondeado sobre 100. Las dimensiones sin evaluación quedan fuera y sus pesos no reducen el resultado. El informe muestra los pesos y el alcance." },
+    { q: "¿Cómo interpreto un hallazgo?", a: "Revisa si describe una observación, un indicador o información insuficiente. Usa la evidencia y su limitación para decidir el siguiente paso. La prioridad del plan se presenta por separado del puntaje." },
+    { q: "¿Qué puede explicar el asistente?", a: "Si está habilitado, explica conceptos y responde preguntas de seguimiento sobre el informe autorizado en tu espacio de trabajo. Puede ayudarte a identificar evidencias y priorizar acciones. Evita incluir datos sensibles en tus preguntas." },
     { q: "¿Dónde se guardan mis análisis?", a: "Los análisis se guardan en PostgreSQL y se vinculan a un espacio anónimo mediante una cookie. Perder la cookie impide recuperar el acceso desde ese navegador." },
     { q: "¿Se pueden analizar URLs internas o con puerto no estándar?", a: "No. Por diseño de seguridad, solo direcciones HTTP/HTTPS públicas en puertos estándar (80/443). El motor resuelve DNS y bloquea destinos hacia redes privadas, servicios internos o metadatos de nube." },
   ];
@@ -404,11 +384,11 @@ function CtaFinal() {
               Tu primer informe de privacidad en un clic.
             </h2>
             <p className="mx-auto mt-4 max-w-md text-[15px] leading-7 text-muted">
-              Analiza un sitio ahora o explora el panel con el informe de muestra (marcado como ilustrativo).
+              Ejecuta el motor con una URL pública o abre el panel para consultar tus análisis guardados.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <LinkBtn href="/app/nuevo" size="lg"><Search className="h-4 w-4" />Analizar un sitio</LinkBtn>
-              <LinkBtn href="/app/informe/PS-SAMPLE" variant="ghost" size="lg">Ver informe de muestra</LinkBtn>
+              <LinkBtn href="/app/dashboard" variant="ghost" size="lg">Consultar el panel</LinkBtn>
             </div>
           </div>
         </div>
@@ -449,7 +429,7 @@ function SiteFooter() {
           <p className="text-[13px] font-semibold">Contacto</p>
           <div className="mt-3 grid gap-2 text-[13px] text-muted">
             <a href="mailto:contacto@privacyos.cl" className="hover:text-ink">contacto@privacyos.cl</a>
-            <span>Estado del motor: v1.0.0-sereno (Hito 1)</span>
+            <span>Motor de análisis de alcance acotado</span>
           </div>
         </div>
       </div>
@@ -473,6 +453,7 @@ export default function Landing() {
         <Capacidades />
         <Marcos />
         <Informe />
+        <Quotes />
         <Faq />
         <CtaFinal />
       </main>

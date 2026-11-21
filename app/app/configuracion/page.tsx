@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Contrast, Database, Monitor, Moon, PlayCircle, Settings2, ShieldCheck, Sun, Trash2 } from "lucide-react";
+import { Check, Contrast, Database, Monitor, Moon, Settings2, ShieldCheck, Sun, Trash2 } from "lucide-react";
 import { useTheme } from "@/components/theme";
 import { borrarEspacioRemoto } from "@/lib/api-client";
 import { Alert, LinkBtn, Modal } from "@/components/ui";
@@ -119,7 +119,7 @@ export default function ConfiguracionPage() {
           recuperar ese espacio: no hay cuentas ni inicio de sesión en esta versión.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <LinkBtn href="/app/informe/PS-SAMPLE" variant="ghost" size="sm"><PlayCircle className="h-3.5 w-3.5" aria-hidden="true" />Ver informe de muestra</LinkBtn>
+          <LinkBtn href="/app/nuevo" variant="ghost" size="sm">Iniciar análisis</LinkBtn>
           <button onClick={() => setConfirmarBorrado(true)} className="btn btn-danger btn-sm">
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Borrar sitios y análisis
           </button>

@@ -80,8 +80,13 @@ export async function updateSite(ownerHash: string, id: string, patch: SiteUpdat
 export async function deleteSite(ownerHash: string, id: string): Promise<boolean> {
   const prisma = getPrisma();
   try {
-    const result = await prisma.site.deleteMany({ where: { id, ownerHash } });
-    return result.count > 0;
+    const result = await prisma.site.deleteMany({
+      where: { id, ownerHash, analyses: { none: {} } },
+    });
+    if (result.count > 0) return true;
+    const site = await prisma.site.findFirst({ where: { id, ownerHash }, select: { id: true } });
+    if (site) throw "TIENE_ANALISIS" as SiteErrors;
+    return false;
   } catch (err) {
     const e = err as { code?: string };
     if (e.code === "P2003") throw "TIENE_ANALISIS" as SiteErrors; // FK restrict

@@ -86,23 +86,37 @@ function assertJsonContentType(req: Request): void {
 }
 
 /** Lee y valida un cuerpo JSON con tope de tamaño. */
-export async function parseJsonBodyLimited(req: Request): Promise<unknown> {
+export async function parseJsonBodyLimited(req: Request, limit = MAX_JSON_BYTES): Promise<unknown> {
   assertJsonContentType(req);
 
   const declared = Number(req.headers.get("content-length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_JSON_BYTES) {
+  if (Number.isFinite(declared) && declared > limit) {
     throw new ApiError(413, "CUERPO_DEMASIADO_GRANDE", "El cuerpo de la petición excede el límite permitido.");
   }
 
-  let text: string;
+  const reader = req.body?.getReader();
+  if (!reader) throw new ApiError(400, "VALIDACION", "El cuerpo de la petición está vacío.");
+
+  let text = "";
+  let bytes = 0;
+  const decoder = new TextDecoder();
   try {
-    text = await req.text();
-  } catch {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > limit) {
+        await reader.cancel().catch(() => undefined);
+        throw new ApiError(413, "CUERPO_DEMASIADO_GRANDE", "El cuerpo de la petición excede el límite permitido.");
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError(400, "VALIDACION", "No se pudo leer el cuerpo de la petición.");
-  }
-
-  if (Buffer.byteLength(text, "utf8") > MAX_JSON_BYTES) {
-    throw new ApiError(413, "CUERPO_DEMASIADO_GRANDE", "El cuerpo de la petición excede el límite permitido.");
+  } finally {
+    reader.releaseLock();
   }
   if (!text.trim()) {
     throw new ApiError(400, "VALIDACION", "El cuerpo de la petición está vacío.");

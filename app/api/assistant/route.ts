@@ -49,7 +49,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const { question, analysisId } = parsed.data;
+    const { question, analysisId, history } = parsed.data;
     const report = analysisId ? await getAnalysis(workspaceHash(req), analysisId) : null;
     if (analysisId && !report) {
       return jsonError(404, "INFORME_NO_DISPONIBLE", "El informe no está disponible en este espacio.", "Para consultar un concepto general, abre el asistente desde el panel.");
@@ -57,11 +57,11 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     let answer: string;
     try {
-      answer = await explicar(question, report?.payload);
+      answer = await explicar(question, report?.payload, history);
     } catch (err) {
       const code = (err as Error).message ?? "";
       // Log de diagnóstico en el servidor (sin secretos ni contenido del informe).
-      console.error("[assistant] fallo del proveedor:", code);
+      console.error("[assistant] fallo del proveedor");
       if (code === "GEMINI_429" || code === "GEMINI_503") {
         return NextResponse.json(
           {

@@ -126,6 +126,7 @@ export async function crearAnalisisServidor(input: {
   url: string;
   frameworkIds: string[];
   id?: string;
+  siteId?: string;
 }): Promise<{ analysis: Analysis } | { error: ApiErrorBody; status: number }> {
   try {
     const res = await fetch("/api/analyses", {

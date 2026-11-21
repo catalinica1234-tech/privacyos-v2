@@ -26,7 +26,7 @@ function CompararInner() {
   useEffect(() => {
     if (ids.length !== 2 || ids[0] === ids[1]) return;
     let active = true;
-    Promise.all(ids.map((id) => id === "PS-SAMPLE" ? sampleRef : analisisRemoto(id)))
+    Promise.all(ids.map((id) => analisisRemoto(id)))
       .then((reports) => { if (active) setResult({ key: idsKey, reports }); });
     return () => { active = false; };
   }, [ids, idsKey]);
@@ -73,7 +73,6 @@ function CompararInner() {
               {x.dataMode === "live"
                 ? <ShieldCheck className="h-4 w-4 text-menta" />
                 : <PlayCircle className="h-4 w-4 text-muted" />}
-              {x.dataMode === "sample" ? <Pill tone="pill-sample">MUESTRA ILUSTRATIVA</Pill> : null}
               <Pill tone={scoreTone(x.score)}>{x.score}/100</Pill>
               <Pill tone={riesgoPillTone[x.riskLevel ?? "bajo"]}>{severityLabels[x.riskLevel ?? "bajo"]}</Pill>
             </div>
@@ -164,6 +163,3 @@ function CompararInner() {
     </div>
   );
 }
-
-// Referencia circular evitada: se importa aquí para el caso PS-SAMPLE
-import { sampleAnalysis as sampleRef } from "@/lib/sample";

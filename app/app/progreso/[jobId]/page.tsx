@@ -71,6 +71,7 @@ export default function ProgresoPage() {
         const cuerpo = {
           id: /^PS-[A-Z0-9]{6}$/.test(jobId) ? jobId : undefined,
           url: contexto.url,
+          siteId: contexto.siteId,
           frameworkIds: contexto.frameworkIds.length > 0 ? contexto.frameworkIds : (["CL-1928", "CL-21719", "GDPR"] as const),
         };
 

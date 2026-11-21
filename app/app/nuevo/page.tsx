@@ -54,7 +54,7 @@ function NuevoForm() {
       return;
     }
     setError(null);
-    setPendingAnalysis({ id, url: url.trim(), frameworkIds: selected });
+    setPendingAnalysis({ id, url: url.trim(), frameworkIds: selected, siteId: url.trim() === params.get("url") ? params.get("siteId") ?? undefined : undefined });
     router.push(`/app/progreso/${id}`);
   };
 
@@ -139,7 +139,7 @@ function NuevoForm() {
         {error ? <div className="mt-5" role="alert"><Alert kind="danger" title="No se puede iniciar">{error}</Alert></div> : null}
 
         <div className="mt-7 flex flex-wrap items-center gap-3">
-          <button onClick={submit} className="btn btn-primary" disabled={Boolean(explanation)}>
+          <button onClick={submit} className="btn btn-primary" disabled={!url.trim() || Boolean(explanation) || selected.length === 0}>
             <Radar className="h-4 w-4" /> Iniciar análisis
           </button>
           <span className="text-[12px] text-muted">Suele tardar entre 2 y 8 segundos según el destino.</span>

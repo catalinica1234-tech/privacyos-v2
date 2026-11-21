@@ -20,7 +20,7 @@ import { resolveAndGuardHost, validateTargetUrl } from "./safety";
    real y declara sus limitaciones. No se generan datos inventados.
    ═════════════════════════════════════════════════════════════════ */
 
-export const ENGINE_VERSION = "1.0.0-sereno";
+export const ENGINE_VERSION = "1.1.0-sereno";
 
 const USER_AGENT =
   "PRIVACYOS-Scanner/1.0 (+https://github.com/; analisis de privacidad con fines de revision)";
@@ -173,6 +173,14 @@ export async function runAnalysis(input: {
     return { ok: false, code: fetched.code, message: fetched.message, hint: fetched.hint };
   }
   current = fetched.finalUrl;
+  if (fetched.status < 200 || fetched.status >= 300) {
+    return {
+      ok: false,
+      code: "SITIO_INACCESIBLE",
+      message: `El sitio respondió HTTP ${fetched.status}. No se generó un puntaje.`,
+      hint: "Comprueba que la URL pública esté disponible e intenta nuevamente.",
+    };
+  }
 
   const headersSnapshot: Record<string, string> = {};
   for (const h of SECURITY_HEADERS) {
@@ -183,7 +191,10 @@ export async function runAnalysis(input: {
 
   /* 4 · Lectura limitada del HTML inicial (ya descomprimido con tope) */
   const body = { text: fetched.body, bytes: fetched.bodyBytes, truncated: fetched.truncated };
-  const hl = body.text.toLowerCase();
+  const type = fetched.headers.get("content-type") ?? "";
+  const isHtml = /^(text\/html|application\/xhtml\+xml)(?:;|$)/i.test(type.trim());
+  const htmlComplete = isHtml && body.text.trim().length > 0 && !body.truncated;
+  const hl = isHtml ? body.text.toLowerCase() : "";
 
   const trackers = detectTrackers(hl);
   const scriptHosts = new Set<string>();
@@ -320,7 +331,6 @@ export async function runAnalysis(input: {
   );
 
   const httpsOk = current.protocol === "https:";
-  const statusOk = fetched.status < 400;
   const hasHsts = headersSnapshot["strict-transport-security"] !== undefined;
   const hasCsp = headersSnapshot["content-security-policy"] !== undefined;
   const missingExtra = missingHeaders.filter((h) => /x-content-type|x-frame|referrer-policy/.test(h));
@@ -339,25 +349,6 @@ export async function runAnalysis(input: {
       priority: "P2",
       limitation: "Riesgo técnico observado: no equivale a incumplimiento normativo por sí solo.",
     });
-  }
-
-  if (!statusOk) {
-    pushFinding({
-      title: `El sitio respondió con error HTTP ${fetched.status}`,
-      status: "insuficiente",
-      severity: fetched.status >= 500 ? "alto" : "medio",
-      category: "gobernanza",
-      explanation: `La página principal devolvió el estado HTTP ${fetched.status} (${fetched.statusText || "sin descripción"}). El contenido analizado puede ser una página de error y no representar al sitio.`,
-      businessImpact: "Un visitante o un titular de datos no puede acceder al contenido esperado; la disponibilidad es parte de la diligencia operativa.",
-      evidenceIds: [httpResponseId],
-      frameworks: [],
-      recommendation: "Revisa la disponibilidad del sitio y la configuración del servidor o de la plataforma de despliegue antes de sacar conclusiones sobre su privacidad.",
-      priority: fetched.status >= 500 ? "P1" : "P2",
-      limitation: "El análisis se ejecutó, pero sobre la respuesta de error. No se infiere el comportamiento de las páginas válidas.",
-    });
-    engineNotes.push(
-      "La página principal no respondió con un estado exitoso: los hallazgos de contenido y transparencia se limitan y deben interpretarse con cautela.",
-    );
   }
 
   const seguridadRefs = frameworkRefsFor(input.frameworkIds, "seguridad");
@@ -484,7 +475,7 @@ export async function runAnalysis(input: {
   }
 
   /* 6.4 · Transparencia (solo si la página principal respondió correctamente) */
-  if (statusOk && privacyLink) {
+  if (privacyLink) {
     pushFinding({
       title: "Observación positiva: enlace a política de privacidad presente",
       status: "confirmado",
@@ -498,7 +489,7 @@ export async function runAnalysis(input: {
       priority: "P4",
       limitation: "La DETECCIÓN del enlace no implica que el contenido de la política cumpla con los deberes de información.",
     });
-  } else if (statusOk) {
+  } else if (htmlComplete) {
     pushFinding({
       title: "Enlace a política de privacidad no detectado en el HTML inicial",
       status: "insuficiente",
@@ -514,7 +505,7 @@ export async function runAnalysis(input: {
     });
   }
 
-  if (statusOk && !metaDesc) {
+  if (htmlComplete && !metaDesc) {
     pushFinding({
       title: "Sin meta descripción declarada",
       status: "insuficiente",
@@ -557,7 +548,6 @@ export async function runAnalysis(input: {
       value: clamp(
         100 -
           (!httpsOk ? 20 : 0) -
-          (!statusOk ? 15 : 0) -
           (!hasHsts && httpsOk ? 25 : 0) -
           (!hasCsp ? 20 : 0) -
           missingExtra.length * 7,
@@ -568,25 +558,25 @@ export async function runAnalysis(input: {
       id: "transparencia",
       label: "Transparencia de la información",
       weight: 0.25,
-      evaluated: true,
+      evaluated: htmlComplete,
       value: clamp(100 - (privacyLink ? 0 : 45) - (metaDesc ? 0 : 15) + (privacyLink && metaDesc ? 5 : 0)),
-      note: `Enlace a política: ${privacyLink ? "detectado" : "no detectado"}.`,
+      note: !htmlComplete ? "El HTML no estuvo disponible completo; no se puntuó esta dimensión." : `Enlace a política: ${privacyLink ? "detectado" : "no detectado"}.`,
     },
     {
       id: "terceros",
       label: "Intercambio con terceros",
       weight: 0.2,
-      evaluated: true,
+      evaluated: htmlComplete,
       value: clamp(100 - trackers.length * 12),
-      note: `${trackers.length} tecnologías identificadas en la página inicial.`,
+      note: !htmlComplete ? "La lectura no permite valorar la ausencia de señales de terceros." : `${trackers.length} tecnologías identificadas en la página inicial.`,
     },
     {
       id: "gobernanza",
       label: "Gobernanza básica",
       weight: 0.1,
-      evaluated: true,
+      evaluated: htmlComplete && robotsStatus !== null,
       value: clamp(70 - (robotsStatus === 200 ? 0 : 20) - (privacyLink ? 0 : 25) + (robotsStatus === 200 ? 30 : 0)),
-      note: `robots.txt: ${robotsStatus === 200 ? "disponible" : robotsStatus == null ? "sin respuesta" : `estado ${robotsStatus}`}.`,
+      note: !htmlComplete || robotsStatus === null ? "Falta una lectura completa del HTML o respuesta de robots.txt." : `robots.txt: ${robotsStatus === 200 ? "disponible" : robotsStatus == null ? "sin respuesta" : `estado ${robotsStatus}`}.`,
     },
     {
       id: "retencion",
@@ -594,7 +584,7 @@ export async function runAnalysis(input: {
       weight: 0.15,
       evaluated: false,
       value: 0,
-      note: "Requiere revisión del contenido de la política y del backend: fuera del alcance del motor de Hito 1 (se declara como no evaluada).",
+      note: "Requiere revisión del contenido de la política y del backend: fuera del alcance de esta revisión.",
     },
   ];
 
@@ -611,7 +601,7 @@ export async function runAnalysis(input: {
   const recommendations: Recommendation[] = buildPlan(findings);
 
   const accessibility: AccessibilityInfo = {
-    reachable: statusOk,
+    reachable: true,
     finalUrl: current.toString(),
     httpStatus: fetched.status,
     redirects: fetched.redirects,

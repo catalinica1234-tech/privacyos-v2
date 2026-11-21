@@ -24,6 +24,7 @@ export interface PendingAnalysis {
   id: string;
   url: string;
   frameworkIds: FrameworkId[];
+  siteId?: string;
 }
 
 export function setPendingAnalysis(p: PendingAnalysis): void {

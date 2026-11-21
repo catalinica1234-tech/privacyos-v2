@@ -18,7 +18,6 @@ import {  ArrowRight,
 } from "lucide-react";
 import type { Analysis, Evidence, Finding } from "@/lib/contracts";
 import { consultarInforme } from "@/lib/api-client";
-import { sampleAnalysis } from "@/lib/sample";
 import { FRAMEWORKS } from "@/lib/frameworks";
 import { copyToClipboard, downloadText, toMarkdown } from "@/lib/export";
 import {
@@ -32,7 +31,7 @@ import {
   statusTone,
 } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { Alert, EmptyState, LinkBtn, Meter, Pill, Tabs } from "@/components/ui";
+import { EmptyState, LinkBtn, Meter, Pill, Tabs } from "@/components/ui";
 import { AsistenteIA } from "@/components/asistente-ia";
 
 const TABS = [
@@ -66,7 +65,7 @@ export default function InformePage() {
   const [respuesta, setRespuesta] = useState<{ id: string; result: Awaited<ReturnType<typeof consultarInforme>> }>();
   const result = respuesta?.id === id ? respuesta.result : undefined;
   const remota = result?.status === "ok" ? result.analysis : undefined;
-  const necesitaRemota = id !== sampleAnalysis.id && /^PS-[A-Z0-9]{6}$/.test(id);
+  const necesitaRemota = /^PS-[A-Z0-9]{6}$/.test(id);
   useEffect(() => {
     if (!necesitaRemota) return;
     let vivo = true;
@@ -74,7 +73,7 @@ export default function InformePage() {
     return () => { vivo = false; };
   }, [necesitaRemota, id]);
 
-  const analysis = id === sampleAnalysis.id ? sampleAnalysis : remota;
+  const analysis = remota?.dataMode === "live" ? remota : undefined;
 
   if (necesitaRemota && result === undefined) {
     return (
@@ -101,7 +100,6 @@ export default function InformePage() {
     );
   }
 
-  const isSample = analysis.dataMode === "sample";
   const fFilter = analysis.findings.filter((f) => !f.title.startsWith("Observación positiva"));
   const worst = { critico: 0, alto: 0, medio: 0, bajo: 0 } as Record<Finding["severity"], number>;
   for (const f of fFilter) worst[f.severity] += 1;
@@ -113,11 +111,7 @@ export default function InformePage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              {isSample ? (
-                <Pill tone="pill-sample">MUESTRA ILUSTRATIVA</Pill>
-              ) : (
-                <Pill tone="pill-low"><ShieldCheck className="h-3 w-3" />Análisis real</Pill>
-              )}
+              <Pill tone="pill-low"><ShieldCheck className="h-3 w-3" />Análisis real</Pill>
               <span className="code">{analysis.id}</span>
               <span className="text-[12px] text-muted">{formatDate(analysis.createdAt)}</span>
               <span className="pill pill-demo">Motor {analysis.engineVersion}</span>
@@ -159,20 +153,9 @@ export default function InformePage() {
           <button onClick={() => downloadText(`${analysis.id}-informe.md`, toMarkdown(analysis))} className="btn btn-ghost btn-sm"><FileDown className="h-3.5 w-3.5" />Descargar .md</button>
           <button onClick={() => downloadText(`${analysis.id}-analisis.json`, JSON.stringify(analysis, null, 2), "application/json")} className="btn btn-ghost btn-sm"><Download className="h-3.5 w-3.5" />JSON</button>
           <CopyBtn text={toMarkdown(analysis)} />
-          {isSample ? (
-            <LinkBtn href="/app/nuevo" size="sm" className="ml-auto">Analizar un sitio real</LinkBtn>
-          ) : (
-            <LinkBtn href={`/app/nuevo?url=${encodeURIComponent(analysis.input.url)}`} size="sm" className="ml-auto">Re-analizar</LinkBtn>
-          )}
+          <LinkBtn href={`/app/nuevo?url=${encodeURIComponent(analysis.input.url)}`} size="sm" className="ml-auto">Re-analizar</LinkBtn>
         </div>
       </header>
-
-      {isSample ? (
-        <Alert kind="warning" title="Contenido ilustrativo, no verificado">
-          Este informe no proviene de la ejecución del motor: existe para explorar la interfaz sin conexión externa. No
-          describe al sitio indicado. Usa «Nuevo análisis» para obtener resultados reales con evidencia trazable.
-        </Alert>
-      ) : null}
 
       <Tabs
         tabs={TABS.map((t) => ({
@@ -224,6 +207,9 @@ function CopyBtn({ text }: { text: string }) {
 
 /* ── Resumen ejecutivo ── */
 function Resumen({ a, worst }: { a: Analysis; worst: Record<string, number> }) {
+  const evaluated = a.dimensions.filter((d) => d.evaluated);
+  const contribution = evaluated.reduce((sum, d) => sum + d.value * d.weight, 0);
+  const coverage = evaluated.reduce((sum, d) => sum + d.weight, 0);
   const top = a.recommendations.filter((r) => !r.id.startsWith("R-M")).slice(0, 3);
   return (
     <div className="grid gap-5">
@@ -252,19 +238,20 @@ function Resumen({ a, worst }: { a: Analysis; worst: Record<string, number> }) {
             <div key={d.id} className="grid sm:grid-cols-[minmax(150px,220px)_1fr_46px] gap-2 items-center">
               <div>
                 <p className={cn("text-[13px] font-medium", !d.evaluated && "text-muted opacity-60")}>{d.label}</p>
-                {!d.evaluated ? <p className="text-[10.5px] text-muted">no evaluada · peso declarado {d.weight}</p> : null}
+                <p className="text-[10.5px] text-muted">{d.evaluated ? "Peso" : "Sin evaluación · peso declarado"} {Math.round(d.weight * 100)} %</p>
               </div>
               <div>
-                <Meter value={d.value} sm />
-                <p className="mt-1 hidden text-[10.5px] text-muted sm:block">{d.note}</p>
+                {d.evaluated ? <Meter value={d.value} sm /> : null}
+                <p className="mt-1 text-[10.5px] text-muted">{d.note}</p>
               </div>
               <span className="tnum text-right text-[13px] font-semibold">{d.evaluated ? d.value : "n/e"}</span>
             </div>
           ))}
         </div>
         <p className="mt-5 rounded-xl bg-[color:var(--c-marfil)] p-3.5 text-[11.5px] leading-5 text-muted">
-          Fórmula: media ponderada de las dimensiones evaluadas (sus pesos se muestran arriba). Las dimensiones sin
-          evidencia suficiente se excluyen del cálculo y se declaran; el puntaje nunca proviene de datos inventados.
+          El puntaje es la suma de cada valor por su peso, dividida por el peso evaluado.
+          {coverage > 0 ? <> En este informe: {contribution.toFixed(2)} ÷ {coverage.toFixed(2)} = {Math.round(contribution / coverage)}/100 (redondeado).</> : null}
+          {" "}Cobertura por pesos: {Math.round(coverage * 100)} %. La severidad describe los hallazgos; puede ser alta aunque el promedio sea favorable. El resultado orienta una revisión técnica acotada.
         </p>
       </section>
 

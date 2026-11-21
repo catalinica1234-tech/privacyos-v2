@@ -155,8 +155,8 @@ export const siteCreateSchema = z
       .max(2048)
       .url()
       .refine((u) => u.startsWith("http://") || u.startsWith("https://"), "Solo http/https"),
-    nombre: z.string().min(1).max(120).optional(),
-    notas: z.string().max(2000).optional(),
+    nombre: z.string().trim().min(1).max(120).nullable().optional(),
+    notas: z.string().trim().max(2000).nullable().optional(),
   });
 export type SiteCreateInput = z.infer<typeof siteCreateSchema>;
 
@@ -186,6 +186,10 @@ export const assistantRequestSchema = z.object({
     .transform((q) => q.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim())
     .refine((q) => q.length >= 3, "La pregunta es demasiado corta."),
   analysisId: z.string().regex(/^PS-[A-Z0-9]{6}$/).optional(),
+  history: z.array(z.object({
+    role: z.enum(["usuario", "asistente"]),
+    text: z.string().trim().min(1).max(600),
+  })).max(6).optional(),
 });
 export type AssistantRequest = z.infer<typeof assistantRequestSchema>;
 

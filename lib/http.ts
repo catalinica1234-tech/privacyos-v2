@@ -57,7 +57,7 @@ export function routeError(err: unknown): NextResponse {
       503,
       "BASE_DE_DATOS_NO_DISPONIBLE",
       "El servicio de datos está temporalmente fuera de línea.",
-      "No se perdió tu informe: vuelve a intentarlo cuando el servicio se restablezca.",
+      "Vuelve a intentarlo cuando el servicio se restablezca.",
       { "Retry-After": "60" },
     );
   }

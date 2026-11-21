@@ -36,3 +36,24 @@ describe("asistente explicativo", () => {
     await expect(explicar("¿Qué observó el motor?", sampleAnalysis)).rejects.toThrow("RESPUESTA_INVALIDA");
   });
 });
+
+it("preserva contexto autorizado y conversación después de una cuota temporal", async () => {
+  vi.stubEnv("GEMINI_API_KEY", "test");
+  const provider = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(new Response("", { status: 429 }))
+    .mockResolvedValueOnce(Response.json({ candidates: [{ content: { parts: [{ text: "Primero, revisa la evidencia disponible." }] } }] }));
+  vi.stubGlobal("fetch", provider);
+  const report = { ...sampleAnalysis, dataMode: "live" as const };
+  await expect(explicar("¿Y ahora qué?", report, [{ role: "usuario", text: "¿Qué priorizo?" }])).resolves.toContain("Primero");
+  const body = JSON.parse(String(provider.mock.calls[1][1]?.body));
+  expect(body.contents[0].parts[0].text).toContain("¿Qué priorizo?");
+  expect(body.contents[0].parts[0].text).toContain(report.input.host);
+});
+
+it("rechaza identificadores de evidencia que el informe no contiene", async () => {
+  vi.stubEnv("GEMINI_API_KEY", "test");
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({
+    candidates: [{ content: { parts: [{ text: "La evidencia EV-9999 confirma un hallazgo." }] } }],
+  })));
+  await expect(explicar("¿Cuál evidencia existe?", sampleAnalysis)).rejects.toThrow("RESPUESTA_INVALIDA");
+});
