@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRightLeft, FileText, PlayCircle, ShieldCheck } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
-import { getHistory } from "@/lib/store";
 import { analisisRemoto } from "@/lib/api-client";
 import { formatDate, riesgoPillTone, scoreTone, severityLabels } from "@/lib/utils";
 import { EmptyState, LinkBtn, Meter, Pill } from "@/components/ui";
@@ -22,37 +21,22 @@ function CompararInner() {
   const params = useSearchParams();
   const idsKey = params.get("ids") ?? "";
   const ids = useMemo(() => idsKey.split(",").filter(Boolean), [idsKey]);
-  const [ready, setReady] = useState(false);
-  const [history, setHistory] = useState<Analysis[]>([]);
-  const [remotas, setRemotas] = useState<Record<string, Analysis>>({});
-  const [intentadas, setIntentadas] = useState<Set<string>>(new Set());
+  const [result, setResult] = useState<{ key: string; reports: (Analysis | null)[] }>();
 
   useEffect(() => {
-    let vivo = true;
-    const local = getHistory();
-    setHistory(local);
-    setReady(true);
-    // Fallback servidor: los ids seleccionados que no estén en este navegador
-    // se piden a la base de datos (comparar entre equipos/persistencia real).
-    const faltan = ids.filter((id) => /^PS-[A-Z0-9]{6}$/.test(id) && !local.some((x) => x.id === id));
-    faltan.forEach(async (id) => {
-      const a = await analisisRemoto(id);
-      if (!vivo) return;
-      if (a) setRemotas((prev) => ({ ...prev, [id]: a }));
-      setIntentadas((prev) => new Set(prev).add(id));
-    });
-    return () => { vivo = false; };
-  }, [ids]);
+    if (ids.length !== 2 || ids[0] === ids[1]) return;
+    let active = true;
+    Promise.all(ids.map((id) => id === "PS-SAMPLE" ? sampleRef : analisisRemoto(id)))
+      .then((reports) => { if (active) setResult({ key: idsKey, reports }); });
+    return () => { active = false; };
+  }, [ids, idsKey]);
 
-  const [a, b] = useMemo(
-    () => ids.map((id) => history.find((x) => x.id === id) ?? remotas[id] ?? (id === "PS-SAMPLE" ? { ...sampleRef } : null)),
-    [ids, history, remotas],
-  );
-
-  if (!ready || ids.some((x) => /^PS-[A-Z0-9]{6}$/.test(x) && !history.some((h) => h.id === x) && remotas[x] === undefined && !intentadas.has(x))) {
+  const validSelection = ids.length === 2 && ids[0] !== ids[1];
+  if (validSelection && result?.key !== idsKey) {
     return <div className="skeleton h-72" role="status" aria-label="Cargando los análisis seleccionados" />;
   }
 
+  const [a, b] = validSelection ? result?.reports ?? [] : [];
   if (!a || !b) {
     return (
       <EmptyState

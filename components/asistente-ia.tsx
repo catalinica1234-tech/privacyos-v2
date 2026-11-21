@@ -12,8 +12,7 @@ import type { Analysis } from "@/lib/contracts";
    - Accesibilidad: dictado por voz en el navegador (Web Speech API)
      para quien prefiere hablar antes que escribir; ocurre en el
      dispositivo y si el navegador no lo soporta, el botón no aparece.
-   - La conversación se conserva al cerrar el panel y al recargar la
-     pestaña (sessionStorage), para no perder el contexto de lectura.
+   - La conversación se mantiene en memoria mientras el panel está montado.
    Diseño: usa las clases existentes (card, btn, pill, tag) para no
    alterar la identidad Serenidad.
    ═══════════════════════════════════════════════════════════════ */
@@ -56,24 +55,6 @@ type RespFx =
   | { tipo: "cargando"; pregunta: string }
   | { tipo: "error"; mensaje: string; pregunta: string };
 
-function leerConversacion(clave: string): Mensaje[] {
-  try {
-    const raw = window.sessionStorage.getItem(clave);
-    if (!raw) return [];
-    const data: unknown = JSON.parse(raw);
-    if (!Array.isArray(data)) return [];
-    return data.filter(
-      (m): m is Mensaje =>
-        typeof m === "object" &&
-        m !== null &&
-        ((m as Mensaje).quien === "usuario" || (m as Mensaje).quien === "asistente") &&
-        typeof (m as Mensaje).texto === "string",
-    );
-  } catch {
-    return [];
-  }
-}
-
 export function AsistenteIA({ analysis, className }: { analysis?: Analysis; className?: string }) {
   const [abierto, setAbierto] = useState(false);
   const [pregunta, setPregunta] = useState("");
@@ -82,21 +63,11 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
   const [escuchando, setEscuchando] = useState(false);
   const [soportaVoz, setSoportaVoz] = useState(false);
   const recRef = useRef<Reconocedor | null>(null);
-  const claveRef = useRef(`privacyos.assistant.${analysis?.id ?? "general"}`);
 
   useEffect(() => {
     setSoportaVoz(Boolean(crearReconocedor()));
-    setLista(leerConversacion(claveRef.current));
     return () => { recRef.current?.stop(); };
   }, []);
-
-  useEffect(() => {
-    try {
-      window.sessionStorage.setItem(claveRef.current, JSON.stringify(lista.slice(-40)));
-    } catch {
-      /* almacenamiento no disponible: la conversación sigue en memoria */
-    }
-  }, [lista]);
 
   const enviar = useCallback(async (p: string) => {
     const pLimpia = p.trim();
@@ -106,7 +77,7 @@ export function AsistenteIA({ analysis, className }: { analysis?: Analysis; clas
     setEfecto({ tipo: "cargando", pregunta: pLimpia });
 
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 35_000);
+    const timeout = window.setTimeout(() => controller.abort(), 45_000);
     try {
       const res = await fetch("/api/assistant", {
         method: "POST",

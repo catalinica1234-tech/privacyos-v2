@@ -2,18 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { CalendarDays, Database, ShieldCheck, UserRound } from "lucide-react";
-import { getHistory } from "@/lib/store";
+import { listarRemotos } from "@/lib/api-client";
 import { formatDate } from "@/lib/utils";
 import { Alert, LinkBtn, Pill } from "@/components/ui";
 import { cn } from "@/lib/utils";
-
-/* ═════════════════════════════════════════════════════════════════
-   Perfil: datos personales guardados SOLO en este navegador.
-   Los análisis se guardan en un espacio de trabajo anónimo del
-   servidor; el perfil no se envía ni se usa para identificarte.
-   ═════════════════════════════════════════════════════════════════ */
-
-const PROFILE_KEY = "privacyos.profile.v1";
 
 interface LocalProfile {
   nombre: string;
@@ -30,30 +22,18 @@ export default function PerfilPage() {
   const [rol, setRol] = useState("");
   const [stats, setStats] = useState<{ total: number; primero: string | null; ultimo: string | null }>({ total: 0, primero: null, ultimo: null });
   const [saved, setSaved] = useState(false);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(PROFILE_KEY);
-      const p = raw ? ({ ...emptyProfile, ...JSON.parse(raw) } as LocalProfile) : emptyProfile;
-      setProfile(p);
-      setNombre(p.nombre);
-      setOrganizacion(p.organizacion);
-      setRol(p.rol);
-      const hist = getHistory();
-      setStats({
-        total: hist.length,
-        primero: hist.length > 0 ? hist[hist.length - 1].createdAt : null,
-        ultimo: hist.length > 0 ? hist[0].createdAt : null,
-      });
-    } finally {
-      setReady(true);
-    }
+    let active = true;
+    listarRemotos().then((rows) => {
+      if (!active || !rows) return;
+      setStats({ total: rows.length, primero: rows.at(-1)?.createdAt ?? null, ultimo: rows[0]?.createdAt ?? null });
+    });
+    return () => { active = false; };
   }, []);
 
   const save = () => {
     const next: LocalProfile = { nombre: nombre.trim(), organizacion: organizacion.trim(), rol: rol.trim() };
-    window.localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
     setProfile(next);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2000);
@@ -65,8 +45,7 @@ export default function PerfilPage() {
         <p className="eyebrow">Perfil</p>
         <h1 className="mt-1 font-disp text-2xl font-semibold tracking-tight">Tu espacio de trabajo</h1>
         <p className="mt-2 max-w-xl text-[13.5px] leading-6 text-muted">
-          Estos datos se guardan únicamente en este navegador y sirven para contextualizar la interfaz. No se envían al
-          servidor ni identifican tu espacio de trabajo. Los análisis usan un espacio anónimo ligado a este navegador;
+          Estos datos se mantienen en memoria mientras la página está abierta. Los análisis usan un espacio anónimo ligado a este navegador;
           esta versión todavía no tiene cuentas ni acceso desde otros dispositivos.
         </p>
       </header>
@@ -86,28 +65,28 @@ export default function PerfilPage() {
           <div className="mt-6 grid gap-4">
             <div>
               <label htmlFor="pf-name" className="label">Nombre</label>
-              <input id="pf-name" value={nombre} onChange={(e) => setNombre(e.target.value)} className="input" placeholder="Nombre y apellido" disabled={!ready} />
+              <input id="pf-name" value={nombre} onChange={(e) => setNombre(e.target.value)} className="input" placeholder="Nombre y apellido" />
             </div>
             <div>
               <label htmlFor="pf-org" className="label">Organización</label>
-              <input id="pf-org" value={organizacion} onChange={(e) => setOrganizacion(e.target.value)} className="input" placeholder="Nombre de la empresa o equipo" disabled={!ready} />
+              <input id="pf-org" value={organizacion} onChange={(e) => setOrganizacion(e.target.value)} className="input" placeholder="Nombre de la empresa o equipo" />
             </div>
             <div>
               <label htmlFor="pf-rol" className="label">Rol</label>
-              <input id="pf-rol" value={rol} onChange={(e) => setRol(e.target.value)} className="input" placeholder="p. ej., DPO, desarrollador, gerencia" disabled={!ready} />
+              <input id="pf-rol" value={rol} onChange={(e) => setRol(e.target.value)} className="input" placeholder="p. ej., DPO, desarrollador, gerencia" />
             </div>
           </div>
 
           <div className="mt-6 flex items-center gap-3">
             <button onClick={save} className="btn btn-primary btn-sm">Guardar perfil</button>
-            {saved ? <Pill tone="pill-low">Guardado en este navegador</Pill> : null}
-            <span className="sr-only" role="status" aria-live="polite">{saved ? "Perfil guardado en este navegador." : ""}</span>
+            {saved ? <Pill tone="pill-low">Actualizado para esta visita</Pill> : null}
+            <span className="sr-only" role="status" aria-live="polite">{saved ? "Perfil actualizado para esta visita." : ""}</span>
           </div>
         </section>
 
         <section className="grid content-start gap-4">
           <div className="card p-5">
-            <p className="eyebrow">Actividad en este navegador</p>
+            <p className="eyebrow">Actividad del espacio de trabajo</p>
             <div className="mt-4 grid gap-3 text-[13px]">
               <p className="flex items-center justify-between"><span className="text-muted">Análisis guardados</span><strong className="tnum">{stats.total}</strong></p>
               <p className="flex items-center justify-between"><span className="text-muted">Primer análisis</span><strong>{stats.primero ? formatDate(stats.primero) : "—"}</strong></p>
@@ -118,8 +97,7 @@ export default function PerfilPage() {
           <div className="card card-quiet p-5">
             <p className="flex items-center gap-2 text-[13px] font-semibold"><Database className="h-4 w-4 text-bosque" aria-hidden="true" />Perfil local, análisis en servidor</p>
             <p className="mt-2 text-[12.5px] leading-5 text-muted">
-              El perfil vive solo en localStorage. Los análisis se persisten en la base de datos del servidor y se
-              cachean en este navegador; no incluyen tu nombre ni tu organización.
+              Tu perfil de esta visita no se adjunta a los análisis del servidor.
             </p>
           </div>
 
@@ -135,7 +113,7 @@ export default function PerfilPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <LinkBtn href="/app/configuracion" variant="ghost" size="sm">Ir a ajustes</LinkBtn>
-        <span className={cn("inline-flex items-center gap-1.5 text-[12px] text-muted")}><CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />Motor real con persistencia en servidor y caché local</span>
+        <span className={cn("inline-flex items-center gap-1.5 text-[12px] text-muted")}><CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />Motor real con persistencia en servidor</span>
       </div>
     </div>
   );

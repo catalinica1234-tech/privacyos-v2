@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { runAnalysis } from "@/lib/analyzer/engine";
 import type { Analysis, AnalysisCreateInput, AnalysisUpdateInput } from "@/lib/contracts";
 import { checkDatabase } from "@/lib/db";
@@ -66,9 +67,28 @@ export async function crearAnalysis(ownerHash: string, input: AnalysisCreateInpu
     }
   }
 
+  // El identificador de reintento tiene alcance de workspace.
+  const requestHash = input.id
+    ? createHash("sha256").update(`privacyos-analysis:${ownerHash}:${input.id}`).digest("hex")
+    : undefined;
+  const requestedId = requestHash
+    ? `PS-${BigInt("0x" + requestHash).toString(36).toUpperCase().slice(-6).padStart(6, "0")}`
+    : undefined;
+  if (requestedId) {
+    const existing = await getAnalysis(ownerHash, requestedId);
+    if (existing) {
+      if (existing.payload.input.url === input.url &&
+        existing.siteId === (input.siteId ?? null) &&
+        JSON.stringify(existing.payload.input.frameworkIds) === JSON.stringify(input.frameworkIds)) {
+        return existing;
+      }
+      throw new ApiError(409, "CONFLICTO", "El análisis ya existe con otros datos.");
+    }
+  }
+
   // 2) Motor real (valida seguridad SSRF, descarga, hallazgos con evidencia).
   const result = await runAnalysis({
-    id: input.id,
+    id: requestedId,
     url: input.url,
     frameworkIds: input.frameworkIds,
   });
@@ -79,7 +99,6 @@ export async function crearAnalysis(ownerHash: string, input: AnalysisCreateInpu
 
   // 3) Persistencia real. El id del payload y el id de la fila deben ser
   //    el mismo: el informe se enlaza por el id que devuelve la API.
-  const requestedId = input.id;
   let id = requestedId ?? result.analysis.id;
   for (let intento = 0; intento < 3; intento++) {
     try {
@@ -95,15 +114,7 @@ export async function crearAnalysis(ownerHash: string, input: AnalysisCreateInpu
     } catch (err) {
       const code = (err as { code?: string }).code;
       if (code === "P2002") {
-        if (requestedId !== undefined) {
-          throw new ApiError(
-            409,
-            "CONFLICTO",
-            "Ya existe un análisis con el identificador solicitado.",
-            "Usa otro id o deja que el servidor lo genere.",
-          );
-        }
-        id = shortId(); // colisión de id generado → nuevo intento
+        id = shortId();
         continue;
       }
       if (code === "P2003") {

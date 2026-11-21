@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, CircleDashed, LoaderCircle, Radar, Save } from "lucide-react";
-import { getPendingAnalysis } from "@/lib/store";
+import { clearPendingAnalysis, getPendingAnalysis } from "@/lib/store";
 import { crearAnalisisServidor } from "@/lib/api-client";
 import { Alert, LinkBtn, Pill } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -13,9 +13,7 @@ import { cn } from "@/lib/utils";
    El motor ejecuta todas las etapas en el servidor con una única
    solicitud; esta línea de tiempo las representa a medida que la
    respuesta llega. No se simulan datos: solo se marca el avance.
-   El contexto del análisis (URL y marcos) permanece en localStorage
-   hasta que la corrida termina, de modo que «Reintentar» no vuelve a
-   pedir los datos ni ejecuta un análisis distinto.
+   La URL pendiente se conserva en memoria durante la navegación.
    ═════════════════════════════════════════════════════════════════ */
 
 const STAGES = [
@@ -33,6 +31,7 @@ export default function ProgresoPage() {
   const params = useParams<{ jobId: string }>();
   const jobId = params?.jobId ?? "";
 
+  const [retry, setRetry] = useState(0);
   const [stage, setStage] = useState(0);
   const [target, setTarget] = useState<string | null>(null);
   const [error, setError] = useState<{ message: string; hint: string } | null>(null);
@@ -91,6 +90,7 @@ export default function ProgresoPage() {
           return;
         }
 
+        clearPendingAnalysis();
         window.clearInterval(ticker);
         setStage(STAGES.length);
         router.replace(`/app/informe/${viaApi.analysis.id}`);
@@ -103,7 +103,7 @@ export default function ProgresoPage() {
     })();
 
     return detener;
-  }, [jobId, router]);
+  }, [jobId, router, retry]);
 
   const etapaActual = Math.min(stage, STAGES.length - 1);
   const enCurso = !error && stage < STAGES.length;
@@ -164,7 +164,7 @@ export default function ProgresoPage() {
             </Alert>
             <div className="flex flex-wrap gap-3">
               {target ? (
-                <button onClick={() => window.location.reload()} className="btn btn-primary btn-sm">Reintentar</button>
+                <button onClick={() => { requestRef.current = null; setError(null); setStage(0); setRetry((n) => n + 1); }} className="btn btn-primary btn-sm">Reintentar</button>
               ) : null}
               <LinkBtn href="/app/nuevo" size="sm"><Radar className="h-3.5 w-3.5" />Iniciar un análisis</LinkBtn>
               <LinkBtn href="/app/dashboard" variant="subtle" size="sm">Volver al panel</LinkBtn>

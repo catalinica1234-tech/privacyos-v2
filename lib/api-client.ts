@@ -1,12 +1,6 @@
 import type { Analysis } from "@/lib/contracts";
 
-/* ═══════════════════════════════════════════════════════════════
-   ADAPTADOR de datos · cliente HTTP de la API REST (Hito 2)
-   El frontend lee de la API real (Supabase vía rutas /api) y, si la
-   API no responde, la app degrada al comportamiento del Hito 1
-   (localStorage). Ninguna llamada a la base de datos ocurre en el
-   navegador: siempre pasa por las rutas del servidor.
-   ═══════════════════════════════════════════════════════════════ */
+// Las vistas consultan los datos del espacio de trabajo a través de la API REST.
 
 /** Señal de aborto con límite de tiempo para que ninguna vista quede en carga infinita. */
 function signalTiempo(ms: number): AbortSignal | undefined {
@@ -68,16 +62,25 @@ export async function listarRemotos(): Promise<AnalysisSummaryApi[] | null> {
   }
 }
 
-/** Detalle completo de un análisis servidor (payload con hallazgos y evidencias). */
-export async function analisisRemoto(id: string): Promise<Analysis | null> {
+export async function consultarInforme(id: string): Promise<
+  { status: "ok"; analysis: Analysis } | { status: "missing" | "error" }
+> {
   try {
     const res = await fetch(`/api/analyses/${encodeURIComponent(id)}`, { cache: "no-store", signal: signalTiempo(15_000) });
-    if (!res.ok) return null;
+    if (res.status === 404) return { status: "missing" };
+    if (!res.ok) return { status: "error" };
+
     const data = (await res.json()) as { ok: boolean; analysis?: { payload: Analysis } };
-    return data.ok && data.analysis?.payload ? data.analysis.payload : null;
+    if (!data.ok || !data.analysis?.payload) return { status: "error" };
+    return { status: "ok", analysis: data.analysis.payload };
   } catch {
-    return null;
+    return { status: "error" };
   }
+}
+
+export async function analisisRemoto(id: string): Promise<Analysis | null> {
+  const result = await consultarInforme(id);
+  return result.status === "ok" ? result.analysis : null;
 }
 
 /** Elimina un análisis servidor (retorna null = API no disponible, true/false = resultado). */

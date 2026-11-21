@@ -368,7 +368,7 @@ function Faq() {
     { q: "¿Qué alcanza a inspeccionar el análisis?", a: "La página inicial del destino: cabeceras HTTP de seguridad, cookies de la primera respuesta, el HTML limitado en bytes y robots.txt. No realiza crawling de rutas internas ni recolección agresiva." },
     { q: "¿Por qué aparece «información insuficiente» en lugar de un hallazgo?", a: "Por diseño honesto. La ausencia de evidencia no prueba incumplimiento. Cuando algo no puede determinarse (p. ej., retención de datos), el informe lo declara y recomienda el paso siguiente de revisión humana." },
     { q: "¿La Ley 21.719 ya está vigente?", a: "Aún no al día de esta versión: se publicó el 13-DIC-2024 y según el texto oficial entra en vigor el 01-DIC-2026 (verificado en LeyChile). Hasta esa fecha rige transitoriamente la Ley 19.628. PRIVACYOS usa 21.719 como marco preparatorio y lo identifica así." },
-    { q: "¿Dónde se guardan mis análisis?", a: "En el almacenamiento local de tu navegador (localStorage). No hay base de datos ni cuentas en esta fase; vaciar datos del navegador elimina el historial. La persistencia de servidor está planificada para la fase 2." },
+    { q: "¿Dónde se guardan mis análisis?", a: "Los análisis se guardan en PostgreSQL y se vinculan a un espacio anónimo mediante una cookie. Perder la cookie impide recuperar el acceso desde ese navegador." },
     { q: "¿Se pueden analizar URLs internas o con puerto no estándar?", a: "No. Por diseño de seguridad, solo direcciones HTTP/HTTPS públicas en puertos estándar (80/443). El motor resuelve DNS y bloquea destinos hacia redes privadas, servicios internos o metadatos de nube." },
   ];
   const [openIdx, setOpenIdx] = useState<number | null>(0);

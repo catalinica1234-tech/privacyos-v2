@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {  ArrowRight,
   ArrowRightLeft,
@@ -17,8 +17,7 @@ import {  ArrowRight,
   TriangleAlert,
 } from "lucide-react";
 import type { Analysis, Evidence, Finding } from "@/lib/contracts";
-import { getHistory } from "@/lib/store";
-import { analisisRemoto } from "@/lib/api-client";
+import { consultarInforme } from "@/lib/api-client";
 import { sampleAnalysis } from "@/lib/sample";
 import { FRAMEWORKS } from "@/lib/frameworks";
 import { copyToClipboard, downloadText, toMarkdown } from "@/lib/export";
@@ -61,38 +60,23 @@ export default function InformePage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
 
-  const [ready, setReady] = useState(false);
-  const [history, setHistory] = useState<Analysis[]>([]);
   const [tab, setTab] = useState("resumen");
   const [hallazgoDestacado, setHallazgoDestacado] = useState<{ id: string; n: number } | null>(null);
 
-  useEffect(() => {
-    setHistory(getHistory());
-    setReady(true);
-  }, []);
-
-  const local: Analysis | null = useMemo(() => {
-    const found = history.find((a) => a.id === id);
-    if (found) return found;
-    if (id === sampleAnalysis.id) return sampleAnalysis;
-    return null;
-  }, [history, id]);
-
-  // Respaldo servidor: si el informe no está en este navegador (ej. viene de
-  // la base de datos o se abrió en otro equipo), se pide a /api/analyses/{id}.
-  const [respuesta, setRespuesta] = useState<{ id: string; analysis: Analysis | null }>();
-  const remota = respuesta?.id === id ? respuesta.analysis : undefined;
-  const necesitaRemota = /^PS-[A-Z0-9]{6}$/.test(id);
+  const [respuesta, setRespuesta] = useState<{ id: string; result: Awaited<ReturnType<typeof consultarInforme>> }>();
+  const result = respuesta?.id === id ? respuesta.result : undefined;
+  const remota = result?.status === "ok" ? result.analysis : undefined;
+  const necesitaRemota = id !== sampleAnalysis.id && /^PS-[A-Z0-9]{6}$/.test(id);
   useEffect(() => {
     if (!necesitaRemota) return;
     let vivo = true;
-    analisisRemoto(id).then((a) => { if (vivo) setRespuesta({ id, analysis: a }); });
+    consultarInforme(id).then((data) => { if (vivo) setRespuesta({ id, result: data }); });
     return () => { vivo = false; };
   }, [necesitaRemota, id]);
 
-  const analysis: Analysis | null = remota ?? local;
+  const analysis = id === sampleAnalysis.id ? sampleAnalysis : remota;
 
-  if (!ready || (local === null && necesitaRemota && remota === undefined)) {
+  if (necesitaRemota && result === undefined) {
     return (
       <div className="grid gap-4">
         <div className="skeleton h-28" />
@@ -105,8 +89,8 @@ export default function InformePage() {
     return (
       <EmptyState
         icon={<FileText className="h-6 w-6" />}
-        title="Informe no disponible"
-        text={`No existe el informe ${id} ni en este navegador ni en la base de datos del servidor. Puede haber sido eliminado.`}
+        title={result?.status === "error" ? "No se pudo consultar el informe" : "Informe no disponible"}
+        text={result?.status === "error" ? "Recarga la página para volver a consultar el servidor." : "El informe no está disponible en este espacio de trabajo."}
         action={
           <div className="flex flex-wrap justify-center gap-3">
             <LinkBtn href="/app/historial" variant="ghost" size="sm">Ver historial</LinkBtn>

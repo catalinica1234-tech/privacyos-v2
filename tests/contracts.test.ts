@@ -46,7 +46,7 @@ describe("workspaceHash", () => {
 
   function request(tokenValue?: string): Request {
     const headers: Record<string, string> = {};
-    if (tokenValue) headers["x-privacyos-workspace"] = tokenValue;
+    if (tokenValue) headers.cookie = `privacyos_workspace=${tokenValue}`;
     return new Request("https://privacyos.test/api/analyses", { headers });
   }
 

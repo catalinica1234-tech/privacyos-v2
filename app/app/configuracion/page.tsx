@@ -1,72 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Contrast, Database, Monitor, Moon, PlayCircle, Settings2, ShieldCheck, Sun, Trash2 } from "lucide-react";
 import { useTheme } from "@/components/theme";
-import { clearHistory, getHistory, saveAnalysis } from "@/lib/store";
-import { sampleAnalysis } from "@/lib/sample";
 import { borrarEspacioRemoto } from "@/lib/api-client";
-import { Alert, Modal } from "@/components/ui";
+import { Alert, LinkBtn, Modal } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 /* ═════════════════════════════════════════════════════════════════
    Configuración: tema, contraste, datos y estado del motor.
    El historial se persiste en el servidor dentro de un espacio de
-   trabajo anónimo (cookie HttpOnly) y se cachea en localStorage para
-   continuidad si la red o la base fallan. El perfil personal nunca se
-   envía al servidor.
+   trabajo anónimo mediante una cookie HttpOnly.
    ═════════════════════════════════════════════════════════════════ */
 
 type Aviso = { tono: "ok" | "warn" | "error"; texto: string } | null;
 
 export default function ConfiguracionPage() {
   const { prefs, setTheme, setContrast } = useTheme();
-  const [history, setHistory] = useState<{ total: number; hasSample: boolean }>({ total: 0, hasSample: false });
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [borrando, setBorrando] = useState(false);
   const [aviso, setAviso] = useState<Aviso>(null);
-
-  useEffect(() => {
-    const h = getHistory();
-    setHistory({ total: h.length, hasSample: h.some((a) => a.id === sampleAnalysis.id) });
-  }, []);
-
-  const say = (msg: string) => {
-    setFeedback(msg);
-    window.setTimeout(() => setFeedback(null), 2600);
-  };
-
-  const loadSampleIntoHistory = () => {
-    saveAnalysis({ ...sampleAnalysis, createdAt: new Date().toISOString() });
-    const h = getHistory();
-    setHistory({ total: h.length, hasSample: h.some((a) => a.id === sampleAnalysis.id) });
-    say("Muestra ilustrativa cargada en el historial local.");
-  };
 
   const wipe = async () => {
     setBorrando(true);
     setAviso(null);
     const servidor = await borrarEspacioRemoto();
-    clearHistory();
-    setHistory({ total: 0, hasSample: false });
     setBorrando(false);
     setConfirmarBorrado(false);
 
     if (servidor === "ok") {
       setAviso({
         tono: "ok",
-        texto: "Se borraron los análisis de este navegador y los del espacio de trabajo del servidor. La operación no se puede deshacer.",
+        texto: "Se borraron los sitios y análisis de este espacio de trabajo. La operación no se puede deshacer.",
       });
     } else if (servidor === "no-disponible") {
       setAviso({
         tono: "warn",
-        texto: "Se borró la copia local. El servidor no respondió, así que no pudimos confirmar el borrado de la copia remota; vuelve a intentarlo cuando el servicio de datos esté disponible.",
+        texto: "El servidor no respondió y no se pudo confirmar el borrado; vuelve a intentarlo cuando el servicio de datos esté disponible.",
       });
     } else {
       setAviso({
         tono: "error",
-        texto: "Se borró la copia local, pero el servidor rechazó o no completó el borrado remoto. Vuelve a intentarlo desde este mismo navegador.",
+        texto: "El servidor rechazó o no completó el borrado. Vuelve a intentarlo desde este mismo navegador.",
       });
     }
   };
@@ -140,21 +115,14 @@ export default function ConfiguracionPage() {
       <section className="card p-6">
         <p className="flex items-center gap-2 font-disp text-[15.5px] font-semibold"><Database className="h-4 w-4 text-bosque" aria-hidden="true" />Datos de tu espacio de trabajo</p>
         <p className="mt-2 text-[13px] leading-6 text-muted">
-          {history.total} {history.total === 1 ? "análisis está" : "análisis están"} en la caché de este navegador
-          (localStorage). Los análisis también se guardan en el servidor dentro de un espacio de trabajo anónimo
-          asociado a una cookie HttpOnly de este navegador. Si borras las cookies o usas otro equipo, no podrás
+          Los análisis se guardan en un espacio de trabajo anónimo asociado a una cookie HttpOnly de este navegador. Si borras las cookies o usas otro equipo, no podrás
           recuperar ese espacio: no hay cuentas ni inicio de sesión en esta versión.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          {history.hasSample ? (
-            <button disabled className="btn btn-ghost btn-sm opacity-50"><PlayCircle className="h-3.5 w-3.5" aria-hidden="true" />Muestra ya cargada</button>
-          ) : (
-            <button onClick={loadSampleIntoHistory} className="btn btn-ghost btn-sm"><PlayCircle className="h-3.5 w-3.5" aria-hidden="true" />Cargar informe de muestra</button>
-          )}
+          <LinkBtn href="/app/informe/PS-SAMPLE" variant="ghost" size="sm"><PlayCircle className="h-3.5 w-3.5" aria-hidden="true" />Ver informe de muestra</LinkBtn>
           <button onClick={() => setConfirmarBorrado(true)} className="btn btn-danger btn-sm">
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Borrar todos mis datos
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Borrar sitios y análisis
           </button>
-          {feedback ? <span className="self-center text-[12.5px] font-medium text-bosque" role="status">{feedback}</span> : null}
         </div>
 
         {aviso ? (
@@ -185,13 +153,12 @@ export default function ConfiguracionPage() {
 
       <p className="flex items-start gap-2 text-[12px] leading-5 text-muted">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-none text-bosque" aria-hidden="true" />
-        El perfil personal de la sección «Perfil» se guarda solo en este navegador y no se envía al servidor.
+        El perfil personal de esta visita permanece en memoria.
       </p>
 
       <Modal open={confirmarBorrado} onClose={() => !borrando && setConfirmarBorrado(false)} title="¿Borrar todos los datos?">
         <p className="text-[13.5px] leading-6 text-muted">
-          Se eliminarán <strong className="text-ink">todos los análisis guardados en este navegador y en el espacio de
-          trabajo del servidor</strong>, incluidos sus hallazgos y evidencias. El perfil local y las preferencias se
+          Se eliminarán <strong className="text-ink">todos los sitios y análisis de este espacio de trabajo</strong>, incluidos sus hallazgos y evidencias. El perfil local y las preferencias se
           conservan. Esta acción no se puede deshacer.
         </p>
         <div className="mt-5 flex flex-wrap justify-end gap-3">

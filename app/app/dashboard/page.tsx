@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Archive, FileText, PlayCircle, Radar, Sparkles, ShieldCheck, TriangleAlert } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
-import { getHistory } from "@/lib/store";
 import { analisisRemoto, listarRemotos, summaryAAnalisis } from "@/lib/api-client";
 import { formatDate, severityLabels, riesgoPillTone, scoreTone } from "@/lib/utils";
 import { Alert, EmptyState, LinkBtn, Meter, Pill } from "@/components/ui";
@@ -22,30 +21,24 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let alive = true;
-    const local = getHistory();
-    setHistory(sortByDate(local));
-    setReady(true);
-
     (async () => {
       const rows = await listarRemotos();
       if (!alive) return;
       if (!rows) {
         setRemoteState("error");
+        setReady(true);
         return;
       }
-      setRemoteState("ok");
-      const merged = new Map(local.map((a) => [a.id, a]));
-      for (const row of rows) {
-        if (!merged.has(row.id)) merged.set(row.id, summaryAAnalisis(row));
-      }
-      // El panel necesita dimensiones y hallazgos: se pide el detalle del más
-      // reciente si no está completo en la copia local.
-      const newest = rows[0];
-      if (newest && !local.some((a) => a.id === newest.id && a.dimensions.length > 0)) {
+      const analyses = rows.map(summaryAAnalisis);
+      const newest = analyses[0];
+      if (newest) {
         const detail = await analisisRemoto(newest.id);
-        if (alive && detail) merged.set(detail.id, detail);
+        if (detail) analyses[0] = detail;
       }
-      if (alive) setHistory(sortByDate([...merged.values()]));
+      if (!alive) return;
+      setHistory(sortByDate(analyses));
+      setRemoteState("ok");
+      setReady(true);
     })();
 
     return () => { alive = false; };
@@ -71,9 +64,8 @@ export default function DashboardPage() {
       </header>
 
       {remoteState === "error" ? (
-        <Alert kind="warning" title="Modo local">
-          No se pudo contactar la base de datos. Se muestra la copia guardada en este navegador; los análisis nuevos
-          pueden fallar hasta que el servicio se restablezca.
+        <Alert kind="warning" title="Base de datos no disponible">
+          No se pudieron cargar los análisis. Recarga el panel para volver a intentarlo.
         </Alert>
       ) : null}
 
@@ -194,9 +186,7 @@ export default function DashboardPage() {
       {lastLive ? (
         <p className="flex items-start gap-2 rounded-2xl border border-dashed border-line p-4 text-[12px] leading-5 text-muted">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 flex-none" />
-          El historial se sincroniza con el servidor y mantiene una copia local en este navegador. El acceso está
-          vinculado a este navegador mediante una cookie privada; todavía no hay cuentas para recuperarlo en otro
-          dispositivo. Los resultados reflejan observaciones de la fecha de ejecución y no constituyen un dictamen legal.
+          El historial se consulta en el servidor con la cookie privada de este navegador. Todavía no hay cuentas para recuperarlo en otro dispositivo. Los resultados reflejan observaciones de la fecha de ejecución y no constituyen un dictamen legal.
         </p>
       ) : null}
     </div>
