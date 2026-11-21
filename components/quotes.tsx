@@ -88,7 +88,7 @@ export function Quotes() {
               <button className="btn btn-ghost btn-sm mt-4" onClick={() => { attempt.current = null; setSent(false); }}>Nueva solicitud</button>
             </div>
           ) : (
-            <form ref={form} onSubmit={submit} className="mt-4 grid gap-4">
+            <form ref={form} onSubmit={submit} aria-busy={busy} className="mt-4 grid gap-4">
               <fieldset disabled={busy} className="grid gap-4 sm:grid-cols-2">
                 <div><label className="label" htmlFor="quote-segment">Tipo de cliente</label>
                   <select id="quote-segment" className="select" value={segment} onChange={e => {
@@ -126,7 +126,7 @@ export function Quotes() {
                 <p className="mt-2 leading-6">El equipo usa estos datos para revisar el alcance de la solicitud y ponerse en contacto contigo. La solicitud se guarda en una tabla separada de los informes y no se envía al asistente.</p>
                 <p className="mt-2 leading-6">Puedes solicitar acceso, corrección o eliminación a través del contacto indicado en el pie de página.</p>
               </details>
-              {error ? <div role="alert"><Alert kind="danger">{error}</Alert></div> : null}
+              {error ? <div><Alert kind="danger">{error}</Alert></div> : null}
               <div role="status"><button type="submit" className="btn btn-primary" disabled={busy}>
                 {busy ? "Enviando solicitud…" : "Enviar solicitud"}
               </button></div>

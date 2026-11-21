@@ -83,3 +83,13 @@ model QuoteRequest {
   @@index([createdAt])
   @@map("quote_requests")
 }
+
+model QuoteRateWindow {
+  key         String
+  windowStart DateTime
+  count       Int
+
+  @@id([key, windowStart])
+  @@index([windowStart])
+  @@map("quote_rate_windows")
+}

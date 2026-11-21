@@ -77,7 +77,7 @@ export default function InformePage() {
 
   if (necesitaRemota && result === undefined) {
     return (
-      <div className="grid gap-4">
+      <div className="grid gap-4" role="status" aria-label="Cargando informe">
         <div className="skeleton h-28" />
         <div className="skeleton h-64" />
       </div>
@@ -105,7 +105,7 @@ export default function InformePage() {
   for (const f of fFilter) worst[f.severity] += 1;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 grid-cols-1 gap-6">
       {/* ── Cabecera del informe ── */}
       <header className="card p-6 md:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">

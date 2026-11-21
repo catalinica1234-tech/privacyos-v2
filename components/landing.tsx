@@ -86,13 +86,13 @@ export function SiteHeader() {
           <LinkBtn href="/app/dashboard" size="sm" className="hidden sm:inline-flex">
             Abrir la aplicación
           </LinkBtn>
-          <button className="btn btn-ghost btn-sm md:hidden" onClick={() => setOpen(!open)} aria-label="Menú">
+          <button className="btn btn-ghost btn-sm md:hidden" onClick={() => setOpen(!open)} aria-label="Menú" aria-expanded={open} aria-controls="landing-mobile-menu">
             {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </div>
       </div>
       {open ? (
-        <nav className="border-t border-line-soft px-5 py-3 md:hidden" aria-label="Menú móvil">
+        <nav id="landing-mobile-menu" className="border-t border-line-soft px-5 py-3 md:hidden" aria-label="Menú móvil">
           {links.map(([href, label]) => (
             <a key={href} href={href} onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2.5 text-sm text-muted hover:bg-[color:var(--c-marfil)]">
               {label}
@@ -359,11 +359,11 @@ function Faq() {
         <div className="mt-10 grid gap-3">
           {qa.map((x, i) => (
             <div key={x.q} className="card overflow-hidden p-0">
-              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left" aria-expanded={openIdx === i}>
+              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left" aria-expanded={openIdx === i} aria-controls={"faq-answer-" + i}>
                 <span className="font-disp text-[15.5px] font-semibold">{x.q}</span>
                 <span className={`grid h-7 w-7 flex-none place-items-center rounded-full bg-[color:var(--c-bosque-soft)] text-bosque transition-transform ${openIdx === i ? "rotate-45" : ""}`}>+</span>
               </button>
-              {openIdx === i ? <p className="px-6 pb-6 text-[14px] leading-7 text-muted">{x.a}</p> : null}
+              <p id={"faq-answer-" + i} hidden={openIdx !== i} className="px-6 pb-6 text-[14px] leading-7 text-muted">{x.a}</p>
             </div>
           ))}
         </div>

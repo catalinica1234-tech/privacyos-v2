@@ -9,8 +9,8 @@ const base = "http://127.0.0.1:" + port;
 const reportTarget = "https://example.com";
 
 if (!["postgresql:", "postgres:"].includes(url.protocol) ||
-    url.hostname !== "127.0.0.1" || url.pathname !== "/privacyos_integration") {
-  throw new Error("Esta prueba requiere exclusivamente la base local desechable privacyos_integration.");
+    url.hostname !== "127.0.0.1" || !["/privacyos_integration", "/privacyos_evolution"].includes(url.pathname)) {
+  throw new Error("Esta prueba requiere exclusivamente una base local desechable de integración o evolución.");
 }
 
 const env = {

@@ -104,7 +104,8 @@ export async function explicar(pregunta: string, informe?: Analysis, history?: A
   // Fallback en cadena: si un modelo está saturado, retirado o muy lento,
   // prueba el siguiente (timeout por modelo 12 s; total ≤ 36 s del serverless).
   let ultimoError: Error | null = null;
-  for (const model of MODELOS_PREFERIDOS) {
+  const modelos = process.env.ASSISTANT_STRICT_MODEL === "1" ? MODELOS_PREFERIDOS.slice(0, 1) : MODELOS_PREFERIDOS;
+  for (const model of modelos) {
     try {
       const texto = await pedirProvedor(model, body, key);
       if (contexto) {

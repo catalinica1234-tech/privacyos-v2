@@ -22,3 +22,5 @@ export const quoteSchema = z.object({
     ctx.addIssue({ code: "custom", path: ["organization"], message: "Ingresa el nombre de la organización." });
   }
 });
+
+export type QuoteSubmission = z.infer<typeof quoteSchema>;

@@ -1,0 +1,19 @@
+{
+  "status": "draft-local",
+  "action": "deny",
+  "conditions": {
+    "matchAnyPathRegex": [
+      "^/api/analyses(?:/|$)",
+      "^/api/sites(?:/|$)",
+      "^/api/assistant(?:/|$)"
+    ],
+    "methods": "all",
+    "hosts": "all-public-hosts-serving-the-unfixed-deployment"
+  },
+  "leaveAvailable": [
+    "/",
+    "/app/regulatorio",
+    "/app/derechos"
+  ],
+  "note": "Propuesta de condiciones. No es un payload para la API ni un archivo que Vercel aplique al desplegar."
+}

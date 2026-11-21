@@ -69,7 +69,7 @@ export default function HistorialPage() {
   };
 
   if (!ready) {
-    return <div className="skeleton h-72" />;
+    return <div className="skeleton h-72" role="status" aria-label="Cargando historial" />;
   }
 
   return (

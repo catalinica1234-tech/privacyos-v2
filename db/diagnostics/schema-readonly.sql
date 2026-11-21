@@ -3,7 +3,7 @@ WITH app_tables AS (
   SELECT c.oid, c.relname, c.relrowsecurity, c.relforcerowsecurity, c.relowner
   FROM pg_class c
   JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'public' AND c.relname IN ('sites', 'analyses') AND c.relkind IN ('r', 'p')
+  WHERE n.nspname = 'public' AND c.relname IN ('sites', 'analyses', 'quote_requests', 'quote_rate_windows') AND c.relkind IN ('r', 'p')
 ),
 web_roles AS (
   SELECT oid, rolname

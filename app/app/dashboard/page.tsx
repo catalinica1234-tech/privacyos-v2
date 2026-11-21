@@ -51,13 +51,13 @@ export default function DashboardPage() {
     : null;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 grid-cols-1 gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Panel</p>
           <h1 className="mt-1 font-disp text-2xl font-semibold tracking-tight">Tu privacidad, de un vistazo</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <LinkBtn href="/app/nuevo" size="sm"><Radar className="h-3.5 w-3.5" />Nuevo análisis</LinkBtn>
           <LinkBtn href="/app/sitios" variant="ghost" size="sm">Sitios</LinkBtn>
           <LinkBtn href="/app/historial" variant="ghost" size="sm"><Archive className="h-3.5 w-3.5" />Historial</LinkBtn>
@@ -82,12 +82,12 @@ export default function DashboardPage() {
           <section className="card p-6 md:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <Pill tone="pill-low"><ShieldCheck className="h-3 w-3" />Análisis real</Pill>
                   <span className="text-[12px] text-muted">{formatDate(lastLive.createdAt)}</span>
                 </div>
                 <h2 className="mt-3 font-disp text-xl font-semibold tracking-tight">{lastLive.input.host}</h2>
-                <p className="mt-1 text-[12.5px] text-muted">{lastLive.input.url}</p>
+                <p className="mt-1 break-all text-[12.5px] text-muted">{lastLive.input.url}</p>
               </div>
               <div className="flex items-center gap-5">
                 <div className="text-right">
@@ -100,7 +100,7 @@ export default function DashboardPage() {
 
             <div className="mt-6 grid gap-3 md:grid-cols-2 md:gap-x-10">
               {lastLive.dimensions.map((d) => (
-                <div key={d.id} className="grid grid-cols-[minmax(150px,190px)_1fr_40px] items-center gap-3">
+                <div key={d.id} className="grid grid-cols-[minmax(0,190px)_minmax(0,1fr)_40px] sm:grid-cols-[minmax(150px,190px)_1fr_40px] items-center gap-3">
                   <span className={`text-[12.5px] ${d.evaluated ? "text-muted" : "text-muted opacity-60"}`}>
                     {d.label}{!d.evaluated ? " · n/e" : ""}
                   </span>
