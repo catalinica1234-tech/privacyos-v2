@@ -1,26 +1,53 @@
 # PRIVACYOS
 
-**Convierte señales técnicas de privacidad web en prioridades claras de revisión.**
+### The intelligence layer for digital privacy.
 
-PRIVACYOS analiza sitios públicos y organiza los hallazgos en un informe con evidencias, un puntaje orientativo y acciones recomendadas.
+**Analiza. Comprende. Protege.**
 
-[Visitar la aplicación](https://privacyos-v2.vercel.app/) · [Ver la presentación](docs/HITO_1/presentacion/PRIVACYOS_Presentacion.pdf)
+PRIVACYOS es una plataforma de análisis de privacidad digital que identifica señales de riesgo en sitios web, organiza evidencias y presenta informes con recomendaciones. Ayuda a personas y organizaciones a comprender cómo los servicios digitales gestionan la privacidad de sus usuarios y a decidir qué revisar primero.
 
-![Panel de PRIVACYOS](docs/evidence/capturas/dashboard.png)
+## Accede a PRIVACYOS
 
-## Funcionalidades
+**[Abrir la aplicación web](https://privacyos-v2.vercel.app/)** · [Ver la presentación](docs/HITO_1/presentacion/PRIVACYOS_Presentacion.pdf)
 
-- Escaneo de sitios públicos e informes con hallazgos, evidencias y puntuación.
-- Gestión de sitios, historial y comparación de análisis por espacio del navegador.
-- Asistente Gemini para consultar un informe y hacer preguntas de seguimiento. Requiere configuración del servidor.
+![Captura del panel de PRIVACYOS](docs/evidence/capturas/dashboard.png)
 
-La persistencia, el aislamiento y Gemini se verificaron en un entorno de pruebas.
+## ¿Qué ofrece PRIVACYOS?
 
-## Tecnología e instalación
+- **Análisis de privacidad e identificación de riesgos.** Inspecciona señales técnicas de sitios públicos y reúne evidencias para orientar la revisión.
+- **Informes y resultados.** Presenta hallazgos, un puntaje orientativo y recomendaciones priorizadas.
+- **Asistente inteligente.** Permite consultar un informe y hacer preguntas de seguimiento con Gemini cuando el asistente está habilitado.
+- **Gestión de sitios e historial.** Organiza sitios y análisis por workspace y permite comparar resultados.
 
-Next.js y React sirven la interfaz y la API. TypeScript y Zod validan los datos, Prisma conecta con PostgreSQL y Gemini responde a las consultas del asistente.
+La persistencia, el aislamiento entre workspaces y el asistente se verificaron en un entorno de pruebas. La disponibilidad de estas funciones en el enlace público depende de su despliegue y configuración.
 
-Con Node.js 20 o posterior y PostgreSQL local de pruebas, copia [.env.example](.env.example) a .env y configura DATABASE_URL y DIRECT_URL.
+## Tecnologías
+
+**Next.js, React y TypeScript** para la aplicación web y sus rutas API. **Prisma y PostgreSQL** para la persistencia, con configuración preparada para **Supabase**. **Gemini** para el asistente del lado del servidor.
+
+## Documentación académica
+
+| Hito | Contenido |
+| --- | --- |
+| [Hito 1](docs/HITO_1/) | Propuesta, láminas, enlace al prototipo, mapa del producto y arquitectura inicial. |
+| [Hito 2](docs/HITO_2/) | Documento técnico, interfaz de programación, modelo de datos, script de creación y colección de pruebas. |
+| [Hito 3](docs/HITO_3/) | Producto funcional y manuales. El índice distingue los materiales disponibles de los entregables pendientes. |
+
+[Manuales de uso e instalación](docs/MANUALES/) · [Arquitectura](docs/ARQUITECTURA/) · [Seguridad](docs/SEGURIDAD/) · [Despliegue](docs/DESPLIEGUE/)
+
+## Estructura del repositorio
+
+| Ruta | Contenido |
+| --- | --- |
+| [app/](app/) y [components/](components/) | Interfaz, rutas y componentes de la aplicación. |
+| [lib/](lib/) | Motor de análisis, servicios y repositorios de datos. |
+| [db/](db/) y [prisma/](prisma/) | Script de creación, esquema y migraciones de PostgreSQL. |
+| [tests/](tests/), [scripts/](scripts/) y [.github/workflows/](.github/workflows/) | Pruebas, scripts de verificación e integración continua. |
+| [docs/](docs/) | Hitos, manuales y referencias técnicas. |
+
+### Ejecutar en local
+
+Usa Node.js 20 o posterior y PostgreSQL local de pruebas. Copia [.env.example](.env.example) a .env y configura DATABASE_URL y DIRECT_URL para esa base.
 
     npm ci
     npx prisma generate
@@ -29,10 +56,8 @@ Con Node.js 20 o posterior y PostgreSQL local de pruebas, copia [.env.example](.
 
 Abre [http://localhost:3000](http://localhost:3000).
 
-## Documentación
+## Proyecto académico
 
-- [Hito 1 · Propuesta y prototipo](docs/HITO_1/README.md)
-- [Hito 2 · Servicio, API y datos](docs/HITO_2/README.md)
-- [Hito 3 · Producto y entrega final](docs/HITO_3/README.md)
-- [Manuales de uso e instalación](docs/MANUALES/README.md)
-- [Arquitectura](docs/ARQUITECTURA/README.md) · [Seguridad](docs/SEGURIDAD/README.md) · [Despliegue](docs/DESPLIEGUE/README.md)
+- **Asignatura** — INGT Proyecto Semestral
+- **Institución** — Universidad Mayor
+- **Proyecto** — PRIVACYOS
