@@ -12,19 +12,41 @@ PRIVACYOS es una plataforma web que transforma señales técnicas observables de
 
 </div>
 
-> **Hito 2 (INGT1003):** el análisis ahora se **persiste en PostgreSQL (Supabase) vía Prisma**, con
-> una API REST completa de los recursos `sites` y `analyses` (CRUD), separación real de capas y
-> un asistente explicativo opcional por IA. La identidad visual y el motor del Hito 1 se conservan.
+> **Estado verificado al 2026-11-15.** Motor real, API, persistencia, aislamiento por espacio
+> anónimo, asistente IA server-side y accesibilidad están implementados y **probados en local**.
+> La base Supabase de producción está caída (`tenant/user ... not found`), por lo que el CRUD y el
+> aislamiento **no son verificables en producción**. La migración, el commit/push y el despliegue
+> están **pendientes de autorización**. No se declara producción operativa.
 
 ### Novedades del Hito 2
 
 | Componente | Hito 1 | Hito 2 |
 | --- | --- | --- |
-| Persistencia | `localStorage` del navegador | **PostgreSQL/Supabase real** (Prisma 6) |
+| Persistencia | `localStorage` del navegador | **PostgreSQL vía Prisma 6**; probada en local, producción bloqueada por Supabase |
 | API | solo `/api/analyze` (aísla motor) | `/api/sites` + `/api/analyses` — CRUD completo (9 rutas) — más `/api/assistant` |
+| Aislamiento | ninguno | **Espacio anónimo** con cookie HttpOnly y `ownerHash` SHA-256; probado con dos espacios |
 | Códigos HTTP | 200/400/403/504 | 201/200/204/400/403/404/409/500/502/503/504 según caso |
 | Capas | motor aislado | route handler → servicio → repositorio → Prisma |
 | Asistente explicativo | — | Opcional (IA solo en servidor, guardas anti-invención, dictado de voz) |
+
+### Verificación rápida
+
+```bash
+npm ci
+npx prisma generate
+npm run typecheck && npm run lint && npm test && npm run build
+```
+
+- **77/77** pruebas unitarias en verde; cobertura de módulos críticos ≥ 80 % statements.
+- **SSRF**: 8 payloads hostiles rechazados en runtime; DNS fijado por IP, redirecciones revalidadas.
+- **PostgreSQL local**: migraciones aplicadas; CRUD, aislamiento A/B, 404 cruzado, 409 y purga verificados.
+- **Lighthouse** (build de producción local): Home 80/100/100/100; Dashboard 81/100/100/100
+  (performance/accesibilidad/best-practices/SEO).
+- **Producción**: landing y asistente responden; `/api/health`, `/api/sites` y `/api/analyses`
+  fallan por la base. **No hay demo de producción operativa.**
+
+Documentación completa: [`docs/README.md`](docs/README.md) · Cierre y pendientes:
+[`docs/cierre/informe-final-26-preguntas.md`](docs/cierre/informe-final-26-preguntas.md).
 
 ---
 
@@ -55,11 +77,12 @@ PRIVACYOS propone una experiencia que organiza señales técnicas observables y 
 | Validación de URLs (protocolo, puertos, DNS, anti-SSRF, redirecciones revalidadas) | ✅ Real (servidor) |
 | Consulta HTTP limitada a la página inicial + cabeceras + cookies + HTML ≤ N bytes + robots.txt | ✅ Real (motor `1.0.0-sereno`) |
 | Score, hallazgos, recomendaciones y evidencias derivadas | ✅ Solo desde evidencia observada |
-| Persistencia de análisis e informes | ✅ PostgreSQL (Supabase) real vía Prisma; `localStorage` como respaldo |
-| CRUD de `sites` y `analyses` | ✅ 9 rutas REST (documento espejo en `docs/api.md`) |
+| Persistencia de análisis e informes | ✅ PostgreSQL vía Prisma; **probada en local**. `localStorage` como respaldo avisado. Producción bloqueada. |
+| CRUD de `sites` y `analyses` | ✅ 9 rutas REST; **CRUD y aislamiento probados en PostgreSQL local**, no en producción. |
 | Asistente explicativo (IA) | ⚠️ Opcional con feature flag (`ASSISTANT_ENABLED`); texto explicativo marcado, **no** asesoría legal |
 | Dictado por voz | ✅ Web Speech API del navegador (sin proveedores externos) |
-| Cuentas / autenticación | 🕑 Fuera de alcance (los recursos API son de producto, no de sesión) |
+| Cuentas / autenticación | 🕑 **No implementadas**. El espacio vive en una cookie HttpOnly; no hay recuperación entre dispositivos. |
+| Accesibilidad | ✅ Ayudas WCAG 2.2 AA; Lighthouse 100 en Home y Dashboard. **No** se declara conformidad plena. |
 | Crawling, análisis del texto de políticas, monitorización continua | 🕑 Fuera de alcance (se declara en cada informe) |
 | Dataset ilustrativo | 🏷️ Marcado siempre con la píldora «MUESTRA ILUSTRATIVA» y `dataMode: sample` |
 
@@ -106,7 +129,7 @@ PRIVACYOS es un **monolito modular** en capas: route handlers → servicios → 
 app/api/            sites · analyses · assistant · analyze (route handlers)
 components/         Sistema de diseño Serenidad + shell + asistente-ia
 lib/                contracts · db (Prisma singleton) · http (ApiError, envolvente de error)
-                    repositories/ · services/ · api-client.ts (degradación a localStorage)
+                    repositories/ · services/ · api-client.ts (cliente REST)
 prisma/             schema.prisma + migrations/20261026000000_init (baseline)
 db/                 init.sql · erd.mmd · README.md (base desde cero + diagrama ER)
 scripts/            test-crud.mjs (21 verificaciones automáticas del CRUD)
@@ -147,14 +170,14 @@ Requisitos: Node.js 18+ y una base PostgreSQL accesible (el proyecto usa **Supab
 ```bash
 git clone https://github.com/catalinica1234-tech/privacyos-v2.git
 cd privacyos-v2
-npm install
+npm ci
 cp .env.example .env.local   # y completa DATABASE_URL con tu PostgreSQL/Supabase
 npx prisma generate          # genera el cliente Prisma
 ```
 
 Para crear el esquema de base de datos hay dos camino:
 
-- **Migraciones (recomendado):** `npx prisma migrate deploy` aplica lo que está en `prisma/migrations/` (baseline `20261026000000_init`).
+- **Migraciones (recomendado):** `npx prisma migrate deploy` aplica lo que está en `prisma/migrations/` (baseline `20261026000000_init` y `20261102000000_workspace_isolation`).
 - **SQL directo:** `npx prisma db execute --schema prisma/schema.prisma --file db/init.sql`.
 
 ```bash
@@ -195,7 +218,7 @@ Si el proyecto utiliza variables de entorno en tu configuración local, revisa e
 
 3. Tras el primer deploy, verifica la salud del CRUD: `node scripts/test-crud.mjs https://tu-app.vercel.app`.
 
-**Degradación con honor:** si la base de datos no responde, el frontend conserva el historial en `localStorage` y lo marca; la app sigue usable y ningún informe se pierde sin aviso.
+Si PostgreSQL no está disponible, la creación muestra un error y permite reintentar. El historial de este navegador puede contener copias de versiones anteriores. Los informes nuevos se abren tras confirmar el guardado en el servidor.
 
 ## Límites y advertencias
 
@@ -216,3 +239,8 @@ La presentación HTML se puede abrir directamente desde GitHub o descargar para 
 Una herramienta de apoyo para convertir señales técnicas en información más comprensible.
 
 </div>
+
+## Manuales
+
+- [Manual de uso](docs/hito-3/manual-de-uso.md)
+- [Manual técnico](docs/hito-3/manual-tecnico.md)
