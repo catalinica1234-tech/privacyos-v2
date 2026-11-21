@@ -22,6 +22,7 @@ jobs:
     env:
       # Valores inocuos: el build no debe conectarse a una base real.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/privacyos_ci?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/privacyos_ci?schema=public
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       ASSISTANT_ENABLED: "false"
 

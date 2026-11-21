@@ -26,7 +26,7 @@ export function databaseConfigured(): boolean {
 let cached: { at: number; ok: boolean } | null = null;
 
 /**
- * Comprueba disponibilidad real con `SELECT 1`, acotada en tiempo.
+ * Comprueba que la conexión puede leer las tablas del workspace y que existe su esquema de aislamiento.
  * El resultado se cachea 5 s para no castigar cada petición.
  */
 export async function checkDatabase(timeoutMs = 2500): Promise<boolean> {
@@ -41,7 +41,12 @@ export async function checkDatabase(timeoutMs = 2500): Promise<boolean> {
 
   try {
     const ok = await Promise.race([
-      prisma.$queryRaw`SELECT 1`.then(() => true),
+      prisma.$queryRaw`
+        SELECT 1
+        FROM "sites" AS s
+        CROSS JOIN "analyses" AS a
+        WHERE FALSE AND s."ownerHash" = a."ownerHash"
+      `.then(() => true),
       timeout,
     ]);
     const result = ok === true;

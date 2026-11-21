@@ -2,7 +2,7 @@
 
 ## Instalación local
 
-Requisitos: Node.js 20 o posterior, npm y una base PostgreSQL de pruebas vacía. Copia `.env.example` a `.env` y configura allí `DATABASE_URL` para la base de pruebas. Para el asistente opcional, configura `ASSISTANT_ENABLED=1` y `GEMINI_API_KEY` en el entorno del servidor. `ASSISTANT_MODEL` permite indicar el primer modelo que se intenta.
+Requisitos: Node.js 20 o posterior, npm y una base PostgreSQL de pruebas vacía. Copia `.env.example` a `.env` y configura allí `DATABASE_URL` y `DIRECT_URL` para la base de pruebas. En PostgreSQL local pueden apuntar al mismo destino. Para el asistente opcional, configura `ASSISTANT_ENABLED=1` y `GEMINI_API_KEY` en el entorno del servidor. `ASSISTANT_MODEL` permite indicar el primer modelo que se intenta.
 
 ```sh
 npm ci
@@ -28,3 +28,5 @@ Ejecuta `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`. Con e
 ## Preparación de producción
 
 Identifica la base que usa Vercel y verifica su respaldo antes de revisar el estado de las migraciones. `20261102000000_workspace_isolation` deja filas previas sin propietario fuera de los nuevos espacios. Revisa ese impacto antes de autorizar la migración. Configura credenciales directamente en el gestor de variables de Vercel. Tras un despliegue autorizado, verifica el alias, health, persistencia, aislamiento y asistente.
+
+[Integración Supabase, variables y plan de reversión](../deployment/integracion-supabase.md).
