@@ -1,17 +1,22 @@
 # Hito 3 · Producto funcional
 
-**Ponderación:** 35 %. **Cierre oficial:** 27 de noviembre de 2026, 23:59. **Proyección y revisión:** 30 de noviembre al 4 de diciembre.
+## Espacio de entrega
 
-| Evidencia disponible | Criterio relacionado |
-|---|---|
-| [Manual de uso](manual-de-uso.md) y [manual técnico](manual-tecnico.md) | A1, A4 y B3 · Flujo, arranque y solución de fallas |
-| [Arquitectura y decisiones](../arquitectura/README.md) | A2 y B2 · Capas y evolución |
-| [Pruebas](../pruebas/README.md) y [capturas y resultados](../evidencias/README.md) | A1, A3 y A4 · Evidencia local y límites |
-| [Seguridad y datos personales](../seguridad/README.md) | B5 · Insumos técnicos para los anexos |
-| [Producto y negocio](producto-negocio.md) | Contexto complementario. Las proyecciones son supuestos de trabajo. |
+Los materiales definitivos están pendientes de incorporación por los integrantes del equipo que preparan cada pieza. La distribución de nombres y responsables queda a cargo del equipo.
 
-**Pendientes:** confirmar el PDF final de Hito 3 y sus anexos de IA y datos personales, la bitácora y diagramas del commit de entrega, el enlace público del video y la demostración de los primeros 120 segundos. Quedan por acreditar la instalación por un tercero y el recorrido del evaluador con datos ficticios. El archivo `informe privacyos final.pdf` aparece en el historial de octubre y su nombre no acredita que sea la entrega de este hito.
+| Carpeta | Archivo esperado | Contenido |
+|---|---|---|
+| [informes](entregables/informes/) | `hito-3-informe-final-v1.pdf` | PDF aprobado del hito. |
+| [anexos](entregables/anexos/) | `hito-3-anexo-<tema>-v1.pdf` | Anexos aprobados que se entreguen por separado. |
+| [presentaciones](entregables/presentaciones/) | `hito-3-presentacion-v1.pdf` | Láminas aprobadas para compartir. |
+| [videos](entregables/videos/) | `hito-3-demo-v1.mp4` o `hito-3-video-enlace.md` | Video aprobado o ficha de enlace, si corresponde. |
+| [capturas](entregables/capturas/) | `hito-3-flujo-<paso>-01.png` | Capturas aprobadas del flujo evaluado, con commit y entorno. Para anexos integrados en el PDF, registrar su ubicación en el índice del informe. |
 
-La rama documental toma como referencia la consolidación local. Antes de usar la aplicación pública para una evaluación, verificar el aislamiento, el destino de PostgreSQL, la persistencia y el asistente en la versión de entrega.
+La documentación complementaria aprobada va en [complementos](entregables/complementos/), si corresponde, como `hito-3-complemento-<tema>-v1.pdf` o el formato original. Las rutas preparadas conservan únicamente marcadores hasta que el equipo incorpore los archivos aprobados. Consulta las [convenciones de nombres y revisión](../colaboracion.md).
 
-[Ver criterios del Hito 3 en la matriz](../matriz-rubrica-ingt1003.md#hito-3--producto-funcional--35-)
+## Referencias existentes
+
+- [Manual de uso](manual-de-uso.md), [manual técnico](manual-tecnico.md) y [arquitectura](../arquitectura/README.md).
+- [Pruebas](../pruebas/README.md), [seguridad](../seguridad/README.md) y [estado de despliegue](../despliegue/README.md).
+
+Las versiones preliminares e históricas conservan su ruta. El [catálogo de referencias](../evidencias/README.md) registra su procedencia.

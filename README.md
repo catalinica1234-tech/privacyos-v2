@@ -25,7 +25,7 @@ El proyecto es un monolito modular. La interfaz de Next.js y React llama a rutas
 | `lib/` | Contratos, analizador, servicios y repositorios |
 | `prisma/`, `db/` | Esquema, migraciones, modelo relacional y SQL |
 | `tests/`, `scripts/` | Pruebas y utilidades |
-| `docs/` | Hitos, manuales y evidencias |
+| `docs/` | Espacios de entrega por hito, documentación técnica y guía de colaboración |
 
 Consulta el [índice de arquitectura](docs/arquitectura/README.md) y el [contrato REST](docs/api.md).
 
@@ -53,7 +53,7 @@ Abre `http://localhost:3000`. En **Nuevo análisis**, usa un sitio de ejemplo co
 | 2 · Back end · 35 % | [API, modelo, pruebas e informes](docs/hito-2/README.md) |
 | 3 · Producto funcional · 35 % | [Flujo integrado, manuales y pendientes](docs/hito-3/README.md) |
 
-Consulta la [matriz oficial contrastada](docs/matriz-rubrica-ingt1003.md) y el [índice documental](docs/README.md).
+Cada hito tiene un espacio `entregables/` para los archivos aprobados por el equipo. Consulta la [guía de colaboración](docs/colaboracion.md) para elegir la carpeta y nombrar cada archivo, o abre el [índice documental](docs/README.md).
 
 ## Pruebas y evidencias
 
@@ -70,7 +70,7 @@ Con el servidor local y una base desechable, ejecuta `node scripts/test-crud.mjs
 
 El respaldo documental toma como referencia la consolidación local `20be094`. En esa fase se verificaron compilación, 80 pruebas unitarias, 21 comprobaciones CRUD y aislamiento por HTTP, usando una base desechable. La versión pública se evalúa por separado. En la última verificación registrada, la portada estaba accesible y seguía pendiente resolver el aislamiento de la API desplegada y confirmar la base que la sirve. Para la revisión académica, usa el entorno local con datos ficticios.
 
-La rama documental prepara la navegación y la trazabilidad. El video final y la validación del PDF final de Hito 3 siguen pendientes en el inventario. La corrección posterior de aislamiento tiene su propia rama.
+Las carpetas de entrega están preparadas para recibir los materiales aprobados del equipo. La corrección de aislamiento y la integración Supabase se mantienen en sus respectivas ramas locales. Consulta el [estado técnico de despliegue](docs/despliegue/README.md).
 
 ## Equipo
 

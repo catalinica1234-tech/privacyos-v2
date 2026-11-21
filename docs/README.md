@@ -1,15 +1,17 @@
-# Documentación académica de PRIVACYOS V2
+# Documentación de PRIVACYOS V2
 
-| Entrada | Qué revisar |
+Los README de los hitos indican dónde incorporar cada documento aprobado. Empieza por la [guía de colaboración](colaboracion.md) para ver rutas, nombres y control de versiones.
+
+| Entrada | Contenido |
 |---|---|
-| [Matriz de la rúbrica](matriz-rubrica-ingt1003.md) | Criterios oficiales, evidencia, alcance y pendientes. |
-| [Revisión de entrega](revision-entrega.md) | Comprobaciones pendientes para compartir el expediente con el docente. |
-| [Hito 1](hito-1/README.md) | Propuesta, prototipo, mapa y arquitectura inicial. |
-| [Hito 2](hito-2/README.md) | Servicio, API REST, datos e informes técnicos. |
-| [Hito 3](hito-3/README.md) | Producto integrado, manuales y entregables de cierre. |
+| [Hito 1](hito-1/README.md) | Propuesta, prototipo y espacio de entrega. |
+| [Hito 2](hito-2/README.md) | Backend, contrato REST y espacio de entrega. |
+| [Hito 3](hito-3/README.md) | Producto, manuales y espacio de entrega. |
 | [Arquitectura](arquitectura/README.md) | Diagramas, decisiones y capas. |
-| [Evidencias](evidencias/README.md) | Capturas, resultados, procedencia y control de versiones documentales. |
-| [Seguridad](seguridad/README.md) | Aislamiento, tratamiento de datos y verificaciones pendientes. |
+| [Evidencias](evidencias/README.md) | Evidencia técnica transversal y procedencia. |
+| [Seguridad](seguridad/README.md) | Aislamiento y tratamiento de datos. |
 | [Pruebas](pruebas/README.md) | Comandos, resultados por entorno y límites. |
+| [Despliegue](despliegue/README.md) | Estado operativo y guías técnicas. |
+| [Auditoría académica interna](auditoria-academica/INDICE.md) | Ubicación de los informes locales de trabajo. |
 
-Los índices conservan los archivos en su ubicación original. Para una revisión de curso, empieza por el README del hito y contrasta su evidencia en la matriz.
+La [matriz de la rúbrica](matriz-rubrica-ingt1003.md) y la [lista de revisión](revision-entrega.md) sirven para planificar. Los archivos que ya existían conservan su ubicación; los índices de hito se actualizarán con los enlaces definitivos cuando el equipo los incorpore.

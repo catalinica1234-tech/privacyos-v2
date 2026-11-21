@@ -1,14 +1,22 @@
 # Hito 1 · Propuesta
 
-**Ponderación:** 30 %. **Cierre oficial:** 20 de septiembre de 2026, 23:59. **Presentaciones:** 21 al 23 de septiembre.
+## Espacio de entrega
 
-| Evidencia disponible | Criterio relacionado |
-|---|---|
-| [Problema y propuesta de valor](../../README.md#problema-y-propuesta-de-valor) y [láminas existentes](../PRIVACYOS_Presentacion.pdf) | A1 · Propuesta |
-| [Mapa del producto](../mapa-producto.svg) ([PNG](../mapa-producto.png)) | A2–A3 · Prototipo e información |
-| [Diagrama inicial](../diagrama-arquitectura.svg) ([PNG](../diagrama-arquitectura.png)) | B3 · Arquitectura cliente-servidor |
-| [Carta Gantt](../carta-gantt.html) y [capturas históricas](../evidencias/README.md) | Material de apoyo. Las capturas son posteriores a la fecha de entrega. |
+Los materiales definitivos están pendientes de incorporación por los integrantes del equipo que preparan cada pieza. La distribución de nombres y responsables queda a cargo del equipo.
 
-**Pendientes:** identificar el PDF de propuesta entregado y la revisión del repositorio al cierre, cotejar fuentes y alternativas tecnológicas, y acreditar la exposición y defensa si hay registro. El PDF `informe privacyos final.pdf` es un candidato de etapa temprana y contiene identificadores personales. Para compartirlo como evidencia, el equipo debe confirmar la versión y su tratamiento.
+| Carpeta | Archivo esperado | Contenido |
+|---|---|---|
+| [informes](entregables/informes/) | `hito-1-propuesta-v1.pdf` | PDF aprobado del hito. |
+| [anexos](entregables/anexos/) | `hito-1-anexo-<tema>-v1.pdf` | Anexos aprobados que se entreguen por separado. |
+| [presentaciones](entregables/presentaciones/) | `hito-1-presentacion-v1.pdf` | Láminas aprobadas para compartir. |
+| [videos](entregables/videos/) | `hito-1-exposicion-v1.mp4` o `hito-1-video-enlace.md` | Video aprobado o ficha de enlace, si corresponde. |
+| [capturas](entregables/capturas/) | `hito-1-prototipo-<pantalla>-01.png` | Evidencia aprobada del prototipo o de la exposición, con el recorrido y la pantalla identificados. |
 
-[Ver criterios del Hito 1 en la matriz](../matriz-rubrica-ingt1003.md#hito-1--propuesta--30-)
+La documentación complementaria aprobada va en [complementos](entregables/complementos/), si corresponde, como `hito-1-complemento-<tema>-v1.pdf` o el formato original. Las rutas preparadas conservan únicamente marcadores hasta que el equipo incorpore los archivos aprobados. Consulta las [convenciones de nombres y revisión](../colaboracion.md).
+
+## Referencias existentes
+
+- [Mapa del producto](../mapa-producto.svg), [diagrama cliente-servidor](../diagrama-arquitectura.svg) y [carta Gantt](../carta-gantt.html).
+- [Índice de arquitectura](../arquitectura/README.md) para consultar la navegación y el diseño inicial.
+
+Las versiones preliminares e históricas conservan su ruta. El [catálogo de referencias](../evidencias/README.md) registra su procedencia.
