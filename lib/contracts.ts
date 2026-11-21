@@ -123,7 +123,7 @@ export const analyzeRequestSchema = z.object({
     .string()
     .regex(/^PS-[A-Z0-9]{6}$/, "Formato de identificador inválido")
     .optional(),
-  url: z.string().min(4).max(2048),
+  url: z.string().min(4).max(2048).url("La URL debe tener un formato válido"),
   frameworkIds: z.array(FrameworkId).min(1),
 });
 export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;
@@ -179,10 +179,13 @@ export type AnalysisUpdateInput = z.infer<typeof analysisUpdateSchema>;
 /* ── Hito 2 · Asistente explicativo (IA) ── */
 
 export const assistantRequestSchema = z.object({
-  question: z.string().min(3).max(600),
-  // El cliente envía el informe YA cargado (localStorage, muestra o API).
-  // El servidor lo valida con el mismo contrato: nunca fictea contenido.
-  analysis: Analysis,
+  question: z
+    .string()
+    .min(3)
+    .max(600)
+    .transform((q) => q.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim())
+    .refine((q) => q.length >= 3, "La pregunta es demasiado corta."),
+  analysisId: z.string().regex(/^PS-[A-Z0-9]{6}$/).optional(),
 });
 export type AssistantRequest = z.infer<typeof assistantRequestSchema>;
 

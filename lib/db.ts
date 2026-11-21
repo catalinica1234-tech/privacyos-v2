@@ -17,3 +17,40 @@ export function getPrisma(): PrismaClient {
   }
   return globalForPrisma.__privacyosPrisma;
 }
+
+/** true si hay una cadena de conexión configurada (no valida credenciales). */
+export function databaseConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim().length > 0);
+}
+
+let cached: { at: number; ok: boolean } | null = null;
+
+/**
+ * Comprueba disponibilidad real con `SELECT 1`, acotada en tiempo.
+ * El resultado se cachea 5 s para no castigar cada petición.
+ */
+export async function checkDatabase(timeoutMs = 2500): Promise<boolean> {
+  if (!databaseConfigured()) return false;
+  if (cached && Date.now() - cached.at < 5000) return cached.ok;
+
+  const prisma = getPrisma();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => resolve(false), timeoutMs);
+  });
+
+  try {
+    const ok = await Promise.race([
+      prisma.$queryRaw`SELECT 1`.then(() => true),
+      timeout,
+    ]);
+    const result = ok === true;
+    cached = { at: Date.now(), ok: result };
+    return result;
+  } catch {
+    cached = { at: Date.now(), ok: false };
+    return false;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

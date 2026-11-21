@@ -20,12 +20,18 @@ function check(nombre, cond, detalle = "") {
   }
 }
 
+let workspaceCookie = "";
+
 async function req(metodo, ruta, cuerpo) {
+  const headers = new Headers();
+  if (workspaceCookie) headers.set("cookie", workspaceCookie);
+  if (cuerpo !== undefined) headers.set("content-type", "application/json");
   const res = await fetch(BASE + ruta, {
     method: metodo,
-    headers: cuerpo !== undefined ? { "content-type": "application/json" } : undefined,
+    headers,
     body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
   });
+  workspaceCookie = res.headers.get("set-cookie")?.split(";")[0] ?? workspaceCookie;
   let data = null;
   if (res.status !== 204) {
     try { data = await res.json(); } catch { /* sin cuerpo json */ }

@@ -8,8 +8,9 @@ import { Alert, LinkBtn, Pill } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 /* ═════════════════════════════════════════════════════════════════
-   Perfil (Hito 1): datos guardados solo en este navegador.
-   Sin cuentas ni servidores de autenticación en esta fase académica.
+   Perfil: datos personales guardados SOLO en este navegador.
+   Los análisis se guardan en un espacio de trabajo anónimo del
+   servidor; el perfil no se envía ni se usa para identificarte.
    ═════════════════════════════════════════════════════════════════ */
 
 const PROFILE_KEY = "privacyos.profile.v1";
@@ -64,8 +65,9 @@ export default function PerfilPage() {
         <p className="eyebrow">Perfil</p>
         <h1 className="mt-1 font-disp text-2xl font-semibold tracking-tight">Tu espacio de trabajo</h1>
         <p className="mt-2 max-w-xl text-[13.5px] leading-6 text-muted">
-          Esta información se guarda únicamente en este navegador y se usa para contextualizar tus informes. En la fase
-          2 (con backend) migrará a una cuenta real con acceso restringido.
+          Estos datos se guardan únicamente en este navegador y sirven para contextualizar la interfaz. No se envían al
+          servidor ni identifican tu espacio de trabajo. Los análisis usan un espacio anónimo ligado a este navegador;
+          esta versión todavía no tiene cuentas ni acceso desde otros dispositivos.
         </p>
       </header>
 
@@ -99,12 +101,13 @@ export default function PerfilPage() {
           <div className="mt-6 flex items-center gap-3">
             <button onClick={save} className="btn btn-primary btn-sm">Guardar perfil</button>
             {saved ? <Pill tone="pill-low">Guardado en este navegador</Pill> : null}
+            <span className="sr-only" role="status" aria-live="polite">{saved ? "Perfil guardado en este navegador." : ""}</span>
           </div>
         </section>
 
         <section className="grid content-start gap-4">
           <div className="card p-5">
-            <p className="eyebrow">Actividad local</p>
+            <p className="eyebrow">Actividad en este navegador</p>
             <div className="mt-4 grid gap-3 text-[13px]">
               <p className="flex items-center justify-between"><span className="text-muted">Análisis guardados</span><strong className="tnum">{stats.total}</strong></p>
               <p className="flex items-center justify-between"><span className="text-muted">Primer análisis</span><strong>{stats.primero ? formatDate(stats.primero) : "—"}</strong></p>
@@ -113,18 +116,18 @@ export default function PerfilPage() {
           </div>
 
           <div className="card card-quiet p-5">
-            <p className="flex items-center gap-2 text-[13px] font-semibold"><Database className="h-4 w-4 text-bosque" />Persistencia local</p>
+            <p className="flex items-center gap-2 text-[13px] font-semibold"><Database className="h-4 w-4 text-bosque" aria-hidden="true" />Perfil local, análisis en servidor</p>
             <p className="mt-2 text-[12.5px] leading-5 text-muted">
-              Perfil e historial viven en localStorage del navegador. No hay cuentas, contraseñas ni servidores que
-              guarden esta información en la fase académica actual.
+              El perfil vive solo en localStorage. Los análisis se persisten en la base de datos del servidor y se
+              cachean en este navegador; no incluyen tu nombre ni tu organización.
             </p>
           </div>
 
-          <Alert kind="info" title="Autenticación real (fase 2)">
+          <Alert kind="info" title="Cuentas y acceso entre dispositivos">
             <p className="flex gap-2">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-none text-bosque" />
-              La plataforma está preparada para incorporar cuentas y persistencia servidor en la fase 2, sin cambiar la
-              interfaz actual.
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 flex-none text-bosque" aria-hidden="true" />
+              El espacio de trabajo es anónimo y se pierde si borras la cookie del navegador. La recuperación entre
+              dispositivos requiere cuentas reales, previstas para una fase posterior.
             </p>
           </Alert>
         </section>
@@ -132,7 +135,7 @@ export default function PerfilPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <LinkBtn href="/app/configuracion" variant="ghost" size="sm">Ir a ajustes</LinkBtn>
-        <span className={cn("inline-flex items-center gap-1.5 text-[12px] text-muted")}><CalendarDays className="h-3.5 w-3.5" />Hito 1 · motor local con historial del navegador</span>
+        <span className={cn("inline-flex items-center gap-1.5 text-[12px] text-muted")}><CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />Motor real con persistencia en servidor y caché local</span>
       </div>
     </div>
   );

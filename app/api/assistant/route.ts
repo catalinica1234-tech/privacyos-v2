@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { parseJsonBody, routeError } from "@/lib/http";
+import { workspaceHash } from "@/lib/owner";
+import { getAnalysis } from "@/lib/repositories/analyses.repo";
+import { enforceRateLimit, jsonError, routeError } from "@/lib/http";
 import { assistantRequestSchema } from "@/lib/contracts";
 import { asistenteDisponible, DISCLAIMER, explicar } from "@/lib/services/assistant.service";
+import { assertSameOrigin, parseJsonBodyLimited } from "@/lib/request";
 
 /* ═══════════════════════════════════════════════════════════════
    Ruta: /api/assistant · controlador delgado
@@ -16,7 +19,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(req: Request): Promise<NextResponse> {
+  const limited = enforceRateLimit(req, { name: "assistant", limit: 20, windowMs: 10 * 60_000 });
+  if (limited) return limited;
+
   try {
+    assertSameOrigin(req);
     if (!asistenteDisponible()) {
       return NextResponse.json(
         {
@@ -29,25 +36,28 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const body = await parseJsonBody(req);
+    const body = await parseJsonBodyLimited(req);
     const parsed = assistantRequestSchema.safeParse(body);
     // 400: contrato inválido (pregunta o informe con forma incorrecta).
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "VALIDACION",
-          message: "La solicitud no superó la validación de entrada.",
-          hint: issue ? `${issue.path.join(".")}: ${issue.message}` : undefined,
-        },
-        { status: 400 },
+      return jsonError(
+        400,
+        "VALIDACION",
+        "La solicitud no superó la validación de entrada.",
+        issue ? `${issue.path.join(".")}: ${issue.message}` : undefined,
       );
+    }
+
+    const { question, analysisId } = parsed.data;
+    const report = analysisId ? await getAnalysis(workspaceHash(req), analysisId) : null;
+    if (analysisId && !report) {
+      return jsonError(404, "INFORME_NO_DISPONIBLE", "El informe no está disponible en este espacio.", "Para consultar un concepto general, abre el asistente desde el panel.");
     }
 
     let answer: string;
     try {
-      answer = await explicar(parsed.data.question, parsed.data.analysis);
+      answer = await explicar(question, report?.payload);
     } catch (err) {
       const code = (err as Error).message ?? "";
       // Log de diagnóstico en el servidor (sin secretos ni contenido del informe).

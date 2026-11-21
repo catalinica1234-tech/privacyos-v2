@@ -41,8 +41,8 @@ function daysUntilVigencia(): number {
 
 function Brand({ light = false }: { light?: boolean }) {
   return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label="PRIVACYOS · inicio">
-      <span className="grid h-8 w-8 place-items-center rounded-xl bg-bosque font-disp text-[13px] font-bold text-white dark:text-[#10231b]">P</span>
+    <Link href="/" className="flex items-center gap-2.5">
+      <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-xl bg-bosque font-disp text-[13px] font-bold text-white dark:text-[#10231b]">P</span>
       <span className={`font-disp text-lg font-semibold tracking-tight ${light ? "text-white" : ""}`}>PRIVACYOS</span>
     </Link>
   );
@@ -331,7 +331,7 @@ function Informe() {
                   <div key={id} className="rounded-xl bg-[color:var(--c-code-bg)] p-3">
                     <p className="text-[11px] font-semibold text-muted">{id} · {ev.title}</p>
                     <p className="mt-1 break-all text-[12px] text-muted">{ev.detail}</p>
-                    <p className="mt-1 text-[10.5px] text-muted opacity-80">fuente: {ev.source}</p>
+                    <p className="mt-1 text-[11px] text-muted">fuente: {ev.source}</p>
                   </div>
                 );
               })}
@@ -466,7 +466,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main>
+      <main id="contenido-principal" tabIndex={-1}>
         <Hero />
         <Riesgos />
         <ComoFunciona />

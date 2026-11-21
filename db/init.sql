@@ -4,6 +4,7 @@ CREATE SCHEMA IF NOT EXISTS "public";
 -- CreateTable
 CREATE TABLE "sites" (
     "id" TEXT NOT NULL,
+    "ownerHash" TEXT,
     "url" TEXT NOT NULL,
     "nombre" TEXT,
     "notas" TEXT,
@@ -16,6 +17,7 @@ CREATE TABLE "sites" (
 -- CreateTable
 CREATE TABLE "analyses" (
     "id" TEXT NOT NULL,
+    "ownerHash" TEXT,
     "url" TEXT NOT NULL,
     "score" INTEGER NOT NULL,
     "riskLevel" TEXT,
@@ -30,7 +32,13 @@ CREATE TABLE "analyses" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "sites_url_key" ON "sites"("url");
+CREATE UNIQUE INDEX "sites_ownerHash_url_key" ON "sites"("ownerHash", "url");
+
+-- CreateIndex
+CREATE INDEX "sites_ownerHash_idx" ON "sites"("ownerHash");
+
+-- CreateIndex
+CREATE INDEX "analyses_ownerHash_createdAt_idx" ON "analyses"("ownerHash", "createdAt" DESC);
 
 -- CreateIndex
 CREATE INDEX "analyses_createdAt_idx" ON "analyses"("createdAt" DESC);

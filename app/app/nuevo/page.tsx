@@ -21,7 +21,7 @@ function validateUrlClient(raw: string): string | null {
   if (url.protocol !== "http:" && url.protocol !== "https:") return "Solo se permiten direcciones HTTP o HTTPS.";
   if (url.username || url.password) return "La URL no puede incluir credenciales embebidas.";
   if (url.port && url.port !== "80" && url.port !== "443") return "Solo se aceptan los puertos estándar 80 y 443.";
-  if (!url.hostname.includes(".") && url.hostname !== "localhost") return "El dominio no parece público y válido.";
+  if (!url.hostname.includes(".")) return "El dominio no parece público y válido.";
   return null;
 }
 
@@ -81,21 +81,25 @@ function NuevoForm() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
+          aria-invalid={Boolean(explanation)}
+          aria-describedby="url-help"
           className={cn("input", explanation ? "input-error" : "")}
         />
-        {explanation ? (
-          <p className="mt-2 text-[12.5px] font-medium text-[color:var(--c-risk-crit)]">{explanation}</p>
-        ) : url ? (
-          <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-[color:var(--c-bosque)]">
-            <CheckCircle2 className="h-3.5 w-3.5" /> Formato válido · protocolo correcto
-          </p>
-        ) : (
-          <p className="hint">Solo HTTP/HTTPS públicos, sin credenciales y en puertos estándar (80/443).</p>
-        )}
+        <div id="url-help" aria-live="polite">
+          {explanation ? (
+            <p className="mt-2 text-[12.5px] font-medium text-[color:var(--c-risk-crit)]">{explanation}</p>
+          ) : url ? (
+            <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-[color:var(--c-bosque)]">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Formato válido · protocolo correcto
+            </p>
+          ) : (
+            <p className="hint">Solo HTTP/HTTPS públicos, sin credenciales y en puertos estándar (80/443).</p>
+          )}
+        </div>
 
         <div className="mt-8">
-          <p className="label">Marcos normativos del análisis</p>
-          <div className="grid gap-3 md:grid-cols-3">
+          <p className="label" id="marcos-label">Marcos normativos del análisis</p>
+          <div className="grid gap-3 md:grid-cols-3" role="group" aria-labelledby="marcos-label">
             {frameworkList.map((f) => {
               const checked = selected.includes(f.id);
               return (
@@ -113,7 +117,11 @@ function NuevoForm() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <Globe2 className={cn("h-4 w-4", checked ? "text-bosque" : "text-muted")} />
-                    {checked ? <CheckCircle2 className="h-4 w-4 text-bosque" /> : <Pill tone="pill-neutral">{checked}</Pill>}
+                    {checked ? (
+                      <CheckCircle2 className="h-4 w-4 text-bosque" aria-hidden="true" />
+                    ) : (
+                      <span className="text-[11px] text-muted">No incluido</span>
+                    )}
                   </div>
                   <p className="mt-3 font-disp text-[14.5px] font-semibold leading-snug">{f.nombre}</p>
                   <p className="mt-0.5 text-[11.5px] text-muted">{f.jurisdiccion}</p>
@@ -128,7 +136,7 @@ function NuevoForm() {
           </p>
         </div>
 
-        {error ? <div className="mt-5"><Alert kind="danger" title="No se puede iniciar">{error}</Alert></div> : null}
+        {error ? <div className="mt-5" role="alert"><Alert kind="danger" title="No se puede iniciar">{error}</Alert></div> : null}
 
         <div className="mt-7 flex flex-wrap items-center gap-3">
           <button onClick={submit} className="btn btn-primary" disabled={Boolean(explanation)}>

@@ -20,12 +20,15 @@ export default function CompararPage() {
 
 function CompararInner() {
   const params = useSearchParams();
-  const ids = (params.get("ids") ?? "").split(",").filter(Boolean);
+  const idsKey = params.get("ids") ?? "";
+  const ids = useMemo(() => idsKey.split(",").filter(Boolean), [idsKey]);
   const [ready, setReady] = useState(false);
   const [history, setHistory] = useState<Analysis[]>([]);
   const [remotas, setRemotas] = useState<Record<string, Analysis>>({});
+  const [intentadas, setIntentadas] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let vivo = true;
     const local = getHistory();
     setHistory(local);
     setReady(true);
@@ -34,19 +37,20 @@ function CompararInner() {
     const faltan = ids.filter((id) => /^PS-[A-Z0-9]{6}$/.test(id) && !local.some((x) => x.id === id));
     faltan.forEach(async (id) => {
       const a = await analisisRemoto(id);
+      if (!vivo) return;
       if (a) setRemotas((prev) => ({ ...prev, [id]: a }));
+      setIntentadas((prev) => new Set(prev).add(id));
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => { vivo = false; };
+  }, [ids]);
 
   const [a, b] = useMemo(
     () => ids.map((id) => history.find((x) => x.id === id) ?? remotas[id] ?? (id === "PS-SAMPLE" ? { ...sampleRef } : null)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ids.join(","), history, remotas, ready],
+    [ids, history, remotas],
   );
 
-  if (!ready || ids.some((x) => x && !history.some((h) => h.id === x) && remotas[x] === undefined && x !== "PS-SAMPLE" && /^PS-[A-Z0-9]{6}$/.test(x))) {
-    return <div className="skeleton h-72" />;
+  if (!ready || ids.some((x) => /^PS-[A-Z0-9]{6}$/.test(x) && !history.some((h) => h.id === x) && remotas[x] === undefined && !intentadas.has(x))) {
+    return <div className="skeleton h-72" role="status" aria-label="Cargando los análisis seleccionados" />;
   }
 
   if (!a || !b) {

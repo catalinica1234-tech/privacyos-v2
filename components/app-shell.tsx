@@ -43,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={n.href}
                   href={n.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors",
                     active
@@ -76,8 +77,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Barra superior (móvil y escritorio) */}
       <header className="sticky top-0 z-30 border-b border-line-soft bg-[color:var(--c-canvas)]/90 backdrop-blur md:pl-60 no-print">
         <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-8">
-          <Link href="/" className="flex items-center gap-2 md:hidden" aria-label="PRIVACYOS">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-bosque font-disp text-[11px] font-bold text-white dark:text-[#10231b]">P</span>
+          <Link href="/" className="flex items-center gap-2 md:hidden">
+            <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-lg bg-bosque font-disp text-[11px] font-bold text-white dark:text-[#10231b]">P</span>
             <span className="font-disp text-[15px] font-semibold">PRIVACYOS</span>
           </Link>
           <p className="hidden font-disp text-[14px] font-medium text-muted md:block">Plataforma de inteligencia de privacidad digital</p>
@@ -94,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="px-4 pb-28 pt-6 md:pb-10 md:pl-[17.5rem] md:pr-8">
+      <main id="contenido-principal" tabIndex={-1} className="px-4 pb-28 pt-6 md:pb-10 md:pl-[17.5rem] md:pr-8">
         <div className="mx-auto max-w-5xl">{children}</div>
       </main>
 
@@ -107,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={n.href}
                 href={n.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2.5 text-[10.5px] font-medium",
                   active ? "text-bosque" : "text-muted",

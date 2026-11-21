@@ -33,8 +33,8 @@ const config: Config = {
         riskCritSoft: "var(--c-risk-crit-soft)",
       },
       fontFamily: {
-        disp: ["\"Instrument Sans\"", "system-ui", "sans-serif"],
-        sans: ["Inter", "system-ui", "sans-serif"],
+        disp: ["var(--font-instrument)", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       boxShadow: {
         soft: "0 1px 2px rgba(25,26,32,0.04), 0 10px 30px rgba(25,26,32,0.06)",

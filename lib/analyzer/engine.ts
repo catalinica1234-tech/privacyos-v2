@@ -9,6 +9,7 @@ import type {
   Recommendation,
 } from "@/lib/contracts";
 import { FRAMEWORKS } from "@/lib/frameworks";
+import { safeFetch } from "./http-safe";
 import { resolveAndGuardHost, validateTargetUrl } from "./safety";
 
 /* ═════════════════════════════════════════════════════════════════
@@ -55,34 +56,6 @@ interface EngineError {
 export type EngineResult = EngineResultBase | EngineError;
 
 /* ── Utilidades ── */
-
-async function readLimited(res: Response, cap: number): Promise<{ text: string; bytes: number; truncated: boolean }> {
-  if (!res.body) return { text: "", bytes: 0, truncated: false };
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let text = "";
-  let total = 0;
-  let truncated = false;
-  for (;;) {
-    const chunk = await reader.read();
-    if (chunk.done) break;
-    total += chunk.value.byteLength;
-    if (total >= cap) {
-      const remaining = Math.max(0, cap - (total - chunk.value.byteLength));
-      if (remaining > 0) text += decoder.decode(chunk.value.slice(0, remaining));
-      truncated = true;
-      break;
-    }
-    text += decoder.decode(chunk.value, { stream: true });
-  }
-  try {
-    await reader.cancel();
-  } catch {
-    /* cierre anticipado */
-  }
-  text += decoder.decode();
-  return { text, bytes: total, truncated };
-}
 
 interface TrackerHit {
   name: string;
@@ -173,7 +146,6 @@ export async function runAnalysis(input: {
     };
   }
   let current = safety.url;
-  const redirects: string[] = [];
 
   /* 2 · Resolución DNS con verificación SSRF */
   const dnsGuard = await resolveAndGuardHost(current.hostname);
@@ -187,81 +159,30 @@ export async function runAnalysis(input: {
     "Proceso interno del motor (el detalle de IPs se omitió por privacidad)",
   );
 
-  /* 3 · Solicitud HTTP con redirecciones validadas */
+  /* 3 · Solicitud HTTP segura: IP fijada, redirecciones revalidadas y límites */
   const timeout = timeoutMs();
-  const controller = new AbortController();
-  const abortTimer = setTimeout(() => controller.abort(), timeout);
-  const started = Date.now();
-
-  let res: Response | null = null;
-  const hopTime = Math.max(3000, Math.round(timeout / 2));
-  try {
-    for (let hop = 0; hop <= maxRedirects(); hop++) {
-      const hopController = new AbortController();
-      const hopTimer = setTimeout(() => hopController.abort(), hop === 0 ? timeout : hopTime);
-      try {
-        const r = await fetch(current.toString(), {
-          method: "GET",
-          redirect: "manual",
-          signal: hopController.signal,
-          headers: { "user-agent": USER_AGENT, accept: "text/html,application/xhtml+xml" },
-        });
-        if (r.status >= 300 && r.status < 400) {
-          const loc = r.headers.get("location");
-          if (loc) {
-            const next = new URL(loc, current);
-            const guard = validateTargetUrl(next.toString());
-            if (!guard.ok) {
-              return {
-                ok: false,
-                code: "DESTINO_NO_SEGURO",
-                message: `Redirección hacia un destino no permitido: ${guard.reason}`,
-                hint: "El análisis se detuvo por seguridad; no se siguió la redireción.",
-              };
-            }
-            current = guard.url;
-            if (!redirects.includes(current.host)) redirects.push(current.host);
-            continue;
-          }
-          res = r;
-          break;
-        } else {
-          res = r;
-          break;
-        }
-      } finally {
-        clearTimeout(hopTimer);
-      }
-    }
-  } catch (err) {
-    const aborted = err instanceof Error && (err.name === "AbortError" || err.name === "TimeoutError");
-    return {
-      ok: false,
-      code: aborted ? "DESCONECTADO" : "SITIO_INACCESIBLE",
-      message: aborted
-        ? "El destino no respondió dentro del tiempo límite."
-        : "No se pudo conectar con el sitio (inaccesible o rechazó la conexión).",
-      hint: aborted
-        ? "El servidor tardó demasiado en responder; inténtalo nuevamente más tarde."
-        : "Verifica la dirección, o contacta al administrador del sitio si es propio.",
-    };
+  const fetched = await safeFetch({
+    url: current.toString(),
+    userAgent: USER_AGENT,
+    accept: "text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8",
+    timeoutMs: timeout,
+    maxBodyBytes: maxBodyBytes(),
+    maxRedirects: maxRedirects(),
+  });
+  if (!fetched.ok) {
+    return { ok: false, code: fetched.code, message: fetched.message, hint: fetched.hint };
   }
-  clearTimeout(abortTimer);
-
-  if (!res) {
-    return { ok: false, code: "ERROR_INTERNO", message: "No se obtuvo respuesta del destino.", hint: "Inténtalo nuevamente." };
-  }
+  current = fetched.finalUrl;
 
   const headersSnapshot: Record<string, string> = {};
   for (const h of SECURITY_HEADERS) {
-    const v = res.headers.get(h);
+    const v = fetched.headers.get(h);
     if (v) headersSnapshot[h] = v.slice(0, 240);
   }
-  const setCookieList =
-    typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [];
+  const setCookieList = fetched.setCookies;
 
-  /* 4 · Lectura limitada del HTML inicial */
-  const body = await readLimited(res, maxBodyBytes());
+  /* 4 · Lectura limitada del HTML inicial (ya descomprimido con tope) */
+  const body = { text: fetched.body, bytes: fetched.bodyBytes, truncated: fetched.truncated };
   const hl = body.text.toLowerCase();
 
   const trackers = detectTrackers(hl);
@@ -280,8 +201,12 @@ export async function runAnalysis(input: {
     const text = (m[2] || "").trim();
     const combo = `${href} ${text}`;
     if (/privacidad|privacy|pol[ií]tica|policy|datos personales/i.test(combo)) {
-      privacyLink = { href: new URL(href, current).toString(), text: text || href };
-      break;
+      try {
+        privacyLink = { href: new URL(href, current).toString(), text: text || href };
+        break;
+      } catch {
+        // Enlace mal formado: se ignora, no se inventa un destino.
+      }
     }
   }
 
@@ -289,33 +214,35 @@ export async function runAnalysis(input: {
   const metaDesc = /<meta[^>]+name=["']description["'][^>]+content=["']([^"']{1,200})["']/i.exec(hl)?.[1] ?? null;
   const langAttr = /<html[^>]+lang=["']([^"']+)["']/i.exec(hl)?.[1] ?? null;
 
-  /* 5 · robots.txt */
+  /* 5 · robots.txt (misma política SSRF y de redirecciones) */
   let robotsStatus: number | null = null;
   let robotsSitemaps = 0;
-  try {
-    const robotsRes = await fetch(new URL("/robots.txt", current.origin).toString(), {
-      signal: AbortSignal.timeout(Math.max(2500, Math.round(timeout / 3))),
-      headers: { "user-agent": USER_AGENT },
-    });
+  const robotsUrl = new URL("/robots.txt", current.origin);
+  const robotsRes = await safeFetch({
+    url: robotsUrl.toString(),
+    userAgent: USER_AGENT,
+    accept: "text/plain",
+    timeoutMs: Math.max(2500, Math.round(timeout / 3)),
+    maxBodyBytes: 20_000,
+    maxRedirects: 2,
+  });
+  if (robotsRes.ok) {
     robotsStatus = robotsRes.status;
-    if (robotsRes.ok) {
-      const robotsText = (await robotsRes.text()).slice(0, 20000).toLowerCase();
-      robotsSitemaps = (robotsText.match(/^sitemap:/gm) ?? []).length;
+    if (robotsRes.status === 200) {
+      robotsSitemaps = (robotsRes.body.toLowerCase().match(/^sitemap:/gm) ?? []).length;
     }
-  } catch {
-    robotsStatus = null;
   }
 
-  const durationMs = Date.now() - started;
+  const durationMs = fetched.durationMs;
   const httpResponseId = pushEvidence(
     "http",
-    `Respuesta HTTP ${res.status}`,
-    `Solicitud GET completada en ${durationMs} ms. ${redirects.length > 0 ? `Redirecciones seguidas (validadas): ${redirects.length}.` : "Sin redirecciones usadas."}`,
+    `Respuesta HTTP ${fetched.status}`,
+    `Solicitud GET completada en ${durationMs} ms. ${fetched.redirects.length > 0 ? `Redirecciones seguidas (revalidadas): ${fetched.redirects.length}.` : "Sin redirecciones usadas."}`,
     current.toString(),
   );
 
-  const headersList = SECURITY_HEADERS.filter((h) => res?.headers.get(h));
-  const missingHeaders = SECURITY_HEADERS.filter((h) => !res?.headers.get(h));
+  const headersList = SECURITY_HEADERS.filter((h) => fetched.headers.get(h));
+  const missingHeaders = SECURITY_HEADERS.filter((h) => !fetched.headers.get(h));
   pushEvidence(
     "header",
     "Cabeceras de seguridad observadas",
@@ -368,10 +295,10 @@ export async function runAnalysis(input: {
       "robots",
       robotsStatus === 200 ? "robots.txt disponible" : `robots.txt respondió ${robotsStatus}`,
       `Estado HTTP ${robotsStatus}; ${robotsSitemaps > 0 ? `${robotsSitemaps} mapa(s) del sitio declarados.` : "sin declaraciones sitemap visibles."}`,
-      new URL("/robots.txt", current.origin).toString(),
+      robotsUrl.toString(),
     );
   } else {
-    pushEvidence("robots", "robots.txt inaccesible", "El robots.txt no respondió dentro del límite de tiempo.", current.toString());
+    pushEvidence("robots", "robots.txt inaccesible", "El robots.txt no respondió dentro del límite de tiempo o no superó la validación de seguridad.", current.toString());
   }
 
   if (body.truncated) {
@@ -380,7 +307,7 @@ export async function runAnalysis(input: {
   engineNotes.push("Se inspecciona únicamente la página inicial; no se realiza crawling de rutas internas.");
   engineNotes.push("No se extrae contenido de la política de privacidad ni se evalúa su redacción.");
   engineNotes.push("Las relaciones con normativas son indicativas; PRIVACYOS no determina si una organización cumple la ley.");
-  engineNotes.push(`Motor: PRIVACYOS ${ENGINE_VERSION}. Análisis real ejecutado sin red exterior simulada ni datos de muestra.`);
+  engineNotes.push(`Motor: PRIVACYOS ${ENGINE_VERSION}. Análisis real ejecutado contra el sitio, sin datos de muestra ni respuestas simuladas.`);
 
   /* 6 · Hallazgos basados en evidencia real */
 
@@ -392,7 +319,8 @@ export async function runAnalysis(input: {
     "Interno",
   );
 
-  const httpsOk = res.status < 400 && current.protocol === "https:";
+  const httpsOk = current.protocol === "https:";
+  const statusOk = fetched.status < 400;
   const hasHsts = headersSnapshot["strict-transport-security"] !== undefined;
   const hasCsp = headersSnapshot["content-security-policy"] !== undefined;
   const missingExtra = missingHeaders.filter((h) => /x-content-type|x-frame|referrer-policy/.test(h));
@@ -411,6 +339,25 @@ export async function runAnalysis(input: {
       priority: "P2",
       limitation: "Riesgo técnico observado: no equivale a incumplimiento normativo por sí solo.",
     });
+  }
+
+  if (!statusOk) {
+    pushFinding({
+      title: `El sitio respondió con error HTTP ${fetched.status}`,
+      status: "insuficiente",
+      severity: fetched.status >= 500 ? "alto" : "medio",
+      category: "gobernanza",
+      explanation: `La página principal devolvió el estado HTTP ${fetched.status} (${fetched.statusText || "sin descripción"}). El contenido analizado puede ser una página de error y no representar al sitio.`,
+      businessImpact: "Un visitante o un titular de datos no puede acceder al contenido esperado; la disponibilidad es parte de la diligencia operativa.",
+      evidenceIds: [httpResponseId],
+      frameworks: [],
+      recommendation: "Revisa la disponibilidad del sitio y la configuración del servidor o de la plataforma de despliegue antes de sacar conclusiones sobre su privacidad.",
+      priority: fetched.status >= 500 ? "P1" : "P2",
+      limitation: "El análisis se ejecutó, pero sobre la respuesta de error. No se infiere el comportamiento de las páginas válidas.",
+    });
+    engineNotes.push(
+      "La página principal no respondió con un estado exitoso: los hallazgos de contenido y transparencia se limitan y deben interpretarse con cautela.",
+    );
   }
 
   const seguridadRefs = frameworkRefsFor(input.frameworkIds, "seguridad");
@@ -438,12 +385,12 @@ export async function runAnalysis(input: {
       severity: "medio",
       category: "seguridad",
       explanation: "La ausencia de CSP elimina una barrera básica frente a scripts no deseados y a su propia cadena de dominios de terceros.",
-      businessImpact: "Mayor superficie de ataque frente a inyecciones de código,las que podrían exponer datos recopilados.",
+      businessImpact: "Mayor superficie de ataque frente a inyecciones de código, las que podrían exponer datos recopilados.",
       evidenceIds: [httpResponseId],
       frameworks: seguridadRefs,
       recommendation: "Define e implementa una CSP en modo informar → restringir, empezando por el origen del sitio y los dominios legítimos.",
       priority: "P2",
-      limitation: "Derin observación técnica; su pertinencia jurídica depende del marco aplicable y de la naturaleza del tratamiento.",
+      limitation: "Observación técnica; su pertinencia jurídica depende del marco aplicable y de la naturaleza del tratamiento.",
     });
   }
 
@@ -527,7 +474,7 @@ export async function runAnalysis(input: {
       businessImpact: "Procesamiento de datos por terceros en nombre del responsable: debe informarse a titulares y documentarse (relación indicativa con deberes de información).",
       evidenceIds: evidence.filter((e) => e.kind === "html").map((e) => e.id),
       frameworks: reviews,
-      recommendation: "Documenta cada tecnología de terceiros: finalidad, datos tratados y sede del procesador; verifica que la política de privacidad la describa y que exista base/título para su uso.",
+      recommendation: "Documenta cada tecnología de terceros: finalidad, datos tratados y sede del procesador; verifica que la política de privacidad la describa y que exista base/título para su uso.",
       priority: "P2",
       limitation: "No se comparó con el texto de la política declarada del sitio: la consistencia o inconsistencia requiere revisión humana.",
     });
@@ -536,8 +483,8 @@ export async function runAnalysis(input: {
     }
   }
 
-  /* 6.4 · Transparencia */
-  if (privacyLink) {
+  /* 6.4 · Transparencia (solo si la página principal respondió correctamente) */
+  if (statusOk && privacyLink) {
     pushFinding({
       title: "Observación positiva: enlace a política de privacidad presente",
       status: "confirmado",
@@ -551,7 +498,7 @@ export async function runAnalysis(input: {
       priority: "P4",
       limitation: "La DETECCIÓN del enlace no implica que el contenido de la política cumpla con los deberes de información.",
     });
-  } else {
+  } else if (statusOk) {
     pushFinding({
       title: "Enlace a política de privacidad no detectado en el HTML inicial",
       status: "insuficiente",
@@ -567,7 +514,7 @@ export async function runAnalysis(input: {
     });
   }
 
-  if (!metaDesc) {
+  if (statusOk && !metaDesc) {
     pushFinding({
       title: "Sin meta descripción declarada",
       status: "insuficiente",
@@ -607,8 +554,15 @@ export async function runAnalysis(input: {
       label: "Seguridad técnica",
       weight: 0.3,
       evaluated: true,
-      value: clamp(100 - (!httpsOk ? 20 : 0) - (!hasHsts && httpsOk ? 25 : 0) - (!hasCsp ? 20 : 0) - missingExtra.length * 7),
-      note: `HTTPS: ${httpsOk ? "sí" : "no"}; HSTS: ${hasHsts ? "sí" : "no"}; CSP: ${hasCsp ? "sí" : "no"}.`,
+      value: clamp(
+        100 -
+          (!httpsOk ? 20 : 0) -
+          (!statusOk ? 15 : 0) -
+          (!hasHsts && httpsOk ? 25 : 0) -
+          (!hasCsp ? 20 : 0) -
+          missingExtra.length * 7,
+      ),
+      note: `HTTPS: ${httpsOk ? "sí" : "no"}; estado HTTP: ${fetched.status}; HSTS: ${hasHsts ? "sí" : "no"}; CSP: ${hasCsp ? "sí" : "no"}.`,
     },
     {
       id: "transparencia",
@@ -649,8 +603,6 @@ export async function runAnalysis(input: {
   const weighted = evaluated.reduce((acc, d) => acc + d.value * d.weight, 0);
   const score = Math.round(weighted / weightSum);
 
-  const order: Array<Finding["severity"]> = ["critico", "alto", "medio", "bajo"];
-  void order;
   const relevant = findings.filter((f) => f.status !== "preventivo" && f.title.startsWith("Observación positiva") === false);
   const top = resilientPrev(relevant);
   const riskLevel = top ?? (score >= 80 ? "bajo" : "medio");
@@ -659,10 +611,10 @@ export async function runAnalysis(input: {
   const recommendations: Recommendation[] = buildPlan(findings);
 
   const accessibility: AccessibilityInfo = {
-    reachable: res.status < 400,
+    reachable: statusOk,
     finalUrl: current.toString(),
-    httpStatus: res.status,
-    redirects,
+    httpStatus: fetched.status,
+    redirects: fetched.redirects,
     responseBytes: body.bytes,
     durationMs,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, MessageCircleQuestion, Mic, MicOff, Send, Sparkles, X } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
 
@@ -12,6 +12,8 @@ import type { Analysis } from "@/lib/contracts";
    - Accesibilidad: dictado por voz en el navegador (Web Speech API)
      para quien prefiere hablar antes que escribir; ocurre en el
      dispositivo y si el navegador no lo soporta, el botón no aparece.
+   - La conversación se conserva al cerrar el panel y al recargar la
+     pestaña (sessionStorage), para no perder el contexto de lectura.
    Diseño: usa las clases existentes (card, btn, pill, tag) para no
    alterar la identidad Serenidad.
    ═══════════════════════════════════════════════════════════════ */
@@ -47,25 +49,94 @@ const SUGERIDAS = [
   "Explícamelo en palabras sencillas",
 ];
 
+type Mensaje = { quien: "usuario" | "asistente"; texto: string };
+
 type RespFx =
   | { tipo: "vacío" }
   | { tipo: "cargando"; pregunta: string }
-  | { tipo: "respuesta"; texto: string }
-  | { tipo: "error"; mensaje: string };
+  | { tipo: "error"; mensaje: string; pregunta: string };
 
-export function AsistenteIA({ analysis, className }: { analysis: Analysis; className?: string }) {
+function leerConversacion(clave: string): Mensaje[] {
+  try {
+    const raw = window.sessionStorage.getItem(clave);
+    if (!raw) return [];
+    const data: unknown = JSON.parse(raw);
+    if (!Array.isArray(data)) return [];
+    return data.filter(
+      (m): m is Mensaje =>
+        typeof m === "object" &&
+        m !== null &&
+        ((m as Mensaje).quien === "usuario" || (m as Mensaje).quien === "asistente") &&
+        typeof (m as Mensaje).texto === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function AsistenteIA({ analysis, className }: { analysis?: Analysis; className?: string }) {
   const [abierto, setAbierto] = useState(false);
   const [pregunta, setPregunta] = useState("");
   const [efecto, setEfecto] = useState<RespFx>({ tipo: "vacío" });
-  const [lista, setLista] = useState<Array<{ quien: "usuario" | "asistente"; texto: string }>>([]);
+  const [lista, setLista] = useState<Mensaje[]>([]);
   const [escuchando, setEscuchando] = useState(false);
   const [soportaVoz, setSoportaVoz] = useState(false);
   const recRef = useRef<Reconocedor | null>(null);
+  const claveRef = useRef(`privacyos.assistant.${analysis?.id ?? "general"}`);
 
   useEffect(() => {
     setSoportaVoz(Boolean(crearReconocedor()));
+    setLista(leerConversacion(claveRef.current));
     return () => { recRef.current?.stop(); };
   }, []);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(claveRef.current, JSON.stringify(lista.slice(-40)));
+    } catch {
+      /* almacenamiento no disponible: la conversación sigue en memoria */
+    }
+  }, [lista]);
+
+  const enviar = useCallback(async (p: string) => {
+    const pLimpia = p.trim();
+    if (pLimpia.length < 3 || efecto.tipo === "cargando") return;
+    setPregunta("");
+    setLista((prev) => [...prev, { quien: "usuario", texto: pLimpia }]);
+    setEfecto({ tipo: "cargando", pregunta: pLimpia });
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 35_000);
+    try {
+      const res = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ question: pLimpia, analysisId: analysis?.dataMode === "live" ? analysis.id : undefined }),
+        signal: controller.signal,
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; answer?: string; message?: string; hint?: string };
+      if (data.ok && data.answer) {
+        setLista((prev) => [...prev, { quien: "asistente", texto: data.answer! }]);
+        setEfecto({ tipo: "vacío" });
+      } else {
+        setEfecto({
+          tipo: "error",
+          mensaje: [data.message ?? "No se pudo responder ahora.", data.hint].filter(Boolean).join(" "),
+          pregunta: pLimpia,
+        });
+      }
+    } catch {
+      setEfecto({
+        tipo: "error",
+        mensaje: controller.signal.aborted
+          ? "El asistente tardó demasiado en responder. Vuelve a intentarlo."
+          : "Sin conexión con el asistente. El informe completo sigue disponible en las demás pestañas.",
+        pregunta: pLimpia,
+      });
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }, [analysis, efecto.tipo]);
 
   function alternarDictado() {
     if (escuchando) {
@@ -96,47 +167,25 @@ export function AsistenteIA({ analysis, className }: { analysis: Analysis; class
     try { rec.start(); setEscuchando(true); } catch { setEscuchando(false); }
   }
 
-  async function enviar(p: string) {
-    const pLimpia = p.trim();
-    if (pLimpia.length < 3 || efecto.tipo === "cargando") return;
-    setPregunta("");
-    setLista((prev) => [...prev, { quien: "usuario", texto: pLimpia }]);
-    setEfecto({ tipo: "cargando", pregunta: pLimpia });
-
-    try {
-      const res = await fetch("/api/assistant", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question: pLimpia, analysis }),
-      });
-      const data = (await res.json()) as { ok: boolean; answer?: string; message?: string; hint?: string };
-      if (data.ok && data.answer) {
-        setLista((prev) => [...prev, { quien: "asistente", texto: data.answer! }]);
-        setEfecto({ tipo: "vacío" });
-      } else {
-        setEfecto({ tipo: "error", mensaje: data.message ?? "No se pudo responder ahora." });
-      }
-    } catch {
-      setEfecto({ tipo: "error", mensaje: "Sin conexión con el asistente. El informe completo sigue disponible en las demás pestañas." });
-    }
-  }
-
   return (
-    <section id="asistente-ia" className={className}>
+    <section id="asistente-ia" className={className} aria-label="Asistente explicativo del informe">
       {abierto ? (
         <div className="card p-5">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-bosque" />
+            <Sparkles className="h-3.5 w-3.5 text-bosque" aria-hidden="true" />
             <p className="eyebrow">Asistente explicativo</p>
-            <button onClick={() => { setAbierto(false); setLista([]); setEfecto({ tipo: "vacío" }); }} aria-label="Cerrar asistente" className="ml-auto rounded-lg p-1.5 hover:bg-[color:var(--c-menta-soft)]">
-              <X className="h-3.5 w-3.5" />
+            <button
+              onClick={() => setAbierto(false)}
+              aria-label="Cerrar el panel del asistente (la conversación se conserva)"
+              className="ml-auto rounded-lg p-1.5 hover:bg-[color:var(--c-menta-soft)]"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
           <p className="mt-2 text-[12.5px] leading-5 text-muted">
-            Pregunta en palabras propias sobre este informe de{" "}
-            <strong className="text-ink">{analysis.input.host}</strong>. Responde solo con lo observado en el
-            análisis, en corto y en simple; si algo no está en el informe, lo dirá. También puedes usar el botón
-            de micro para hacer la pregunta hablando.
+            {analysis?.dataMode === "live"
+              ? "Pregunta por los hallazgos y las evidencias de este informe."
+              : "Pregunta por cookies, permisos, rastreo, terceros o consentimiento."}
           </p>
 
           {lista.length === 0 && efecto.tipo === "vacío" ? (
@@ -149,67 +198,85 @@ export function AsistenteIA({ analysis, className }: { analysis: Analysis; class
             </div>
           ) : null}
 
-          {lista.length > 0 ? (
-            <div className="mt-4 grid gap-3">
-              {lista.map((m, i) => (
-                <div key={i} className={m.quien === "usuario" ? cnBubbleUser : cnBubbleAsistente}>
-                  {m.texto}
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <div
+            className={lista.length > 0 ? "mt-4 grid gap-3" : "sr-only"}
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-label="Conversación con el asistente"
+          >
+            {lista.map((m, i) => (
+              <div key={i} className={m.quien === "usuario" ? cnBubbleUser : cnBubbleAsistente}>
+                <span className="sr-only">{m.quien === "usuario" ? "Tú preguntaste: " : "El asistente respondió: "}</span>
+                {m.texto}
+              </div>
+            ))}
+          </div>
 
           {efecto.tipo === "cargando" ? (
-            <div className="mt-4 flex items-center gap-2 text-[13px] text-muted">
-              <Loader2 className="h-4 w-4 animate-spin text-bosque" /> Generando explicación…
+            <div className="mt-4 flex items-center gap-2 text-[13px] text-muted" role="status">
+              <Loader2 className="h-4 w-4 animate-spin text-bosque" aria-hidden="true" /> Generando explicación…
             </div>
           ) : null}
           {efecto.tipo === "error" ? (
-            <p className="mt-4 rounded-xl bg-[color:var(--c-risk-med-soft)] p-3 text-[12.5px] leading-5 text-[color:var(--c-risk-med)]">
-              {efecto.mensaje}
-            </p>
+            <div className="mt-4 grid gap-2" role="alert">
+              <p className="rounded-xl bg-[color:var(--c-risk-med-soft)] p-3 text-[12.5px] leading-5 text-[color:var(--c-risk-med)]">
+                {efecto.mensaje}
+              </p>
+              <button onClick={() => enviar(efecto.pregunta)} className="btn btn-ghost btn-sm justify-self-start">
+                Reintentar la pregunta
+              </button>
+            </div>
           ) : null}
 
           <form
-            className="mt-4 flex gap-2"
+            className="mt-4 grid gap-1.5"
             onSubmit={(e) => {
               e.preventDefault();
               enviar(pregunta);
             }}
           >
-            <input
-              value={pregunta}
-              onChange={(e) => setPregunta(e.target.value)}
-              placeholder="Escribe tu pregunta… (máx. 600 caracteres)"
-              maxLength={600}
-              className="input flex-1"
-            />
-            {soportaVoz ? (
-              <button
-                type="button"
-                onClick={alternarDictado}
-                aria-label={escuchando ? "Detener dictado" : "Dictar pregunta por voz"}
-                title={escuchando ? "Detener dictado" : "Dictar por voz (te recomiendo el micrófono del equipo)"}
-                className={`btn btn-sm flex-none self-center ${escuchando ? "btn-danger" : "btn-ghost"}`}
-              >
-                {escuchando ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-                {escuchando ? "Escuchando…" : "Hablar"}
+            <label htmlFor="asistente-pregunta" className="label">Tu pregunta sobre este informe</label>
+            <div className="flex gap-2">
+              <input
+                id="asistente-pregunta"
+                value={pregunta}
+                onChange={(e) => setPregunta(e.target.value)}
+                placeholder="Escribe tu pregunta… (máx. 600 caracteres)"
+                maxLength={600}
+                autoComplete="off"
+                aria-describedby="asistente-limite"
+                className="input flex-1"
+              />
+              {soportaVoz ? (
+                <button
+                  type="button"
+                  onClick={alternarDictado}
+                  aria-pressed={escuchando}
+                  aria-label={escuchando ? "Detener dictado" : "Dictar pregunta por voz"}
+                  title={escuchando ? "Detener dictado" : "Dictar por voz (te recomiendo el micrófono del equipo)"}
+                  className={`btn btn-sm flex-none self-center ${escuchando ? "btn-danger" : "btn-ghost"}`}
+                >
+                  {escuchando ? <MicOff className="h-3.5 w-3.5" aria-hidden="true" /> : <Mic className="h-3.5 w-3.5" aria-hidden="true" />}
+                  {escuchando ? "Escuchando…" : "Hablar"}
+                </button>
+              ) : null}
+              <button type="submit" disabled={efecto.tipo === "cargando"} className="btn btn-primary btn-sm flex-none self-center">
+                <Send className="h-3.5 w-3.5" aria-hidden="true" /> Preguntar
               </button>
-            ) : null}
-            <button type="submit" disabled={efecto.tipo === "cargando"} className="btn btn-primary btn-sm flex-none self-center">
-              <Send className="h-3.5 w-3.5" /> Preguntar
-            </button>
+            </div>
+            <p id="asistente-limite" className="hint">Máximo 600 caracteres. El dictado ocurre en tu dispositivo.</p>
           </form>
           <p className="mt-3 rounded-xl bg-[color:var(--c-marfil)] p-3 text-[11px] leading-4 text-muted">
             Explicación asistida por IA basada en el informe. <strong>No es asesoría legal</strong> y no declara
             incumplimientos: la conversación ocurre en tu navegador y el servidor; la clave del proveedor
-            nunca sale del servidor.
+            nunca sale del servidor. Puedes borrar esta conversación cerrando la pestaña del navegador.
           </p>
         </div>
       ) : (
         <button onClick={() => setAbierto(true)} className="btn btn-ghost btn-sm w-full justify-center">
-          <MessageCircleQuestion className="h-3.5 w-3.5" />
-          Abre el asistente explicativo: el informe en palabras sencillas
+          <MessageCircleQuestion className="h-3.5 w-3.5" aria-hidden="true" />
+          {lista.length > 0 ? "Volver al asistente explicativo" : "Abre el asistente explicativo: el informe en palabras sencillas"}
         </button>
       )}
     </section>

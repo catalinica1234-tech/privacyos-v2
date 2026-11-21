@@ -27,13 +27,13 @@ export type Site = {
   analysisCount?: number;
 };
 
-export async function listarSites(): Promise<Site[]> {
-  return listSites();
+export async function listarSites(ownerHash: string): Promise<Site[]> {
+  return listSites(ownerHash);
 }
 
-export async function crearSite(input: SiteCreateInput): Promise<Site> {
+export async function crearSite(ownerHash: string, input: SiteCreateInput): Promise<Site> {
   try {
-    return await createSite(input);
+    return await createSite(ownerHash, input);
   } catch (err) {
     if ((err as { code?: string }).code === "P2002") {
       throw new ApiError(409, "CONFLICTO_URL", "Ya existe un sitio registrado con esa URL.", "Usa GET /api/sites para verlos.");
@@ -42,17 +42,17 @@ export async function crearSite(input: SiteCreateInput): Promise<Site> {
   }
 }
 
-export async function obtenerSite(id: string): Promise<Site> {
-  const site = await getSite(id);
+export async function obtenerSite(ownerHash: string, id: string): Promise<Site> {
+  const site = await getSite(ownerHash, id);
   if (!site) {
     throw new ApiError(404, "NO_ENCONTRADO", `No existe un sitio con id ${id}.`, "Revisa GET /api/sites.");
   }
   return site;
 }
 
-export async function editarSite(id: string, patch: SiteUpdateInput): Promise<Site> {
+export async function editarSite(ownerHash: string, id: string, patch: SiteUpdateInput): Promise<Site> {
   try {
-    return await updateSite(id, patch);
+    return await updateSite(ownerHash, id, patch);
   } catch (err) {
     if ((err as { code?: string }).code === "P2025") {
       throw new ApiError(404, "NO_ENCONTRADO", `No existe un sitio con id ${id}.`);
@@ -64,10 +64,10 @@ export async function editarSite(id: string, patch: SiteUpdateInput): Promise<Si
   }
 }
 
-export async function eliminarSite(id: string): Promise<void> {
+export async function eliminarSite(ownerHash: string, id: string): Promise<void> {
   let outcome: boolean | string;
   try {
-    outcome = await deleteSite(id);
+    outcome = await deleteSite(ownerHash, id);
   } catch (err) {
     if (err === "TIENE_ANALISIS") {
       throw new ApiError(

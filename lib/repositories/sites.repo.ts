@@ -5,7 +5,8 @@ import type { Site } from "@/lib/services/sites.service";
 /* ═══════════════════════════════════════════════════════════════
    CAPA DE DATOS · repositorio de sites
    Único archivo que consulta la tabla sites. No hay reglas de
-   negocio aquí: solo acceso y mapeo de datos.
+   negocio aquí: solo acceso y mapeo de datos. Todas las consultas
+   filtran por ownerHash (aislamiento por espacio de trabajo).
    ═══════════════════════════════════════════════════════════════ */
 
 export interface SiteRaw {
@@ -32,57 +33,57 @@ export function fromRaw(row: SiteRaw): Site {
   };
 }
 
-const SELECT = { id: true, url: true, nombre: true, notas: true, createdAt: true, updatedAt: true }
+const SELECT = { id: true, url: true, nombre: true, notas: true, createdAt: true, updatedAt: true };
 
-export async function listSites(): Promise<Site[]> {
+export async function listSites(ownerHash: string): Promise<Site[]> {
   const prisma = getPrisma();
   const rows = await prisma.site.findMany({
+    where: { ownerHash },
     orderBy: { createdAt: "desc" },
-    select: { ...SELECT, _count: { select: { analyses: true } } },
+    select: { ...SELECT, _count: { select: { analyses: { where: { ownerHash } } } } },
   });
   return rows.map(fromRaw);
 }
 
-export async function getSite(id: string): Promise<Site | null> {
+export async function getSite(ownerHash: string, id: string): Promise<Site | null> {
   const prisma = getPrisma();
-  const row = await prisma.site.findUnique({
-    where: { id },
-    select: { ...SELECT, _count: { select: { analyses: true } } },
+  const row = await prisma.site.findFirst({
+    where: { id, ownerHash },
+    select: { ...SELECT, _count: { select: { analyses: { where: { ownerHash } } } } },
   });
   return row ? fromRaw(row) : null;
 }
 
-export async function createSite(data: SiteCreateInput): Promise<Site> {
+export async function createSite(ownerHash: string, data: SiteCreateInput): Promise<Site> {
   const prisma = getPrisma();
   const row = await prisma.site.create({
-    data: { url: data.url, nombre: data.nombre ?? null, notas: data.notas ?? null },
-    select: { ...SELECT, _count: { select: { analyses: true } } },
+    data: { ownerHash, url: data.url, nombre: data.nombre ?? null, notas: data.notas ?? null },
+    select: { ...SELECT, _count: { select: { analyses: { where: { ownerHash } } } } },
   });
   return fromRaw(row);
 }
 
-export async function updateSite(id: string, patch: SiteUpdateInput): Promise<Site> {
+export async function updateSite(ownerHash: string, id: string, patch: SiteUpdateInput): Promise<Site> {
   const prisma = getPrisma();
   const data: Record<string, unknown> = {};
   if (patch.url !== undefined) data.url = patch.url;
   if (patch.nombre !== undefined) data.nombre = patch.nombre;
   if (patch.notas !== undefined) data.notas = patch.notas;
   const row = await prisma.site.update({
-    where: { id },
+    where: { id, ownerHash },
     data,
-    select: { ...SELECT, _count: { select: { analyses: true } } },
+    select: { ...SELECT, _count: { select: { analyses: { where: { ownerHash } } } } },
   });
   return fromRaw(row);
 }
 
-export async function deleteSite(id: string): Promise<boolean> {
+export async function deleteSite(ownerHash: string, id: string): Promise<boolean> {
   const prisma = getPrisma();
   try {
-    await prisma.site.delete({ where: { id } });
-    return true;
+    const result = await prisma.site.deleteMany({ where: { id, ownerHash } });
+    return result.count > 0;
   } catch (err) {
     const e = err as { code?: string };
-    if (e.code === "P2025") return false; // no existe
     if (e.code === "P2003") throw "TIENE_ANALISIS" as SiteErrors; // FK restrict
     throw err;
   }

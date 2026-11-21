@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    name: Typecheck · Lint · Tests · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Valores inocuos: el build no debe conectarse a una base real.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/privacyos_ci?schema=public
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ASSISTANT_ENABLED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias reproducibles
+        run: npm ci
+
+      - name: Generar cliente Prisma
+        run: npx prisma generate
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Pruebas unitarias y de seguridad
+        run: npm test
+
+      - name: Cobertura (informativa)
+        run: npm run test:coverage
+
+      - name: Build de producción
+        run: npm run build

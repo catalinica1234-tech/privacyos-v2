@@ -1,23 +1,57 @@
 "use client";
 
+import { AsistenteIA } from "@/components/asistente-ia";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Archive, FileText, PlayCircle, Radar, Sparkles, ShieldCheck, TriangleAlert } from "lucide-react";
 import type { Analysis } from "@/lib/contracts";
-import { getHistory, latestLiveAnalysis } from "@/lib/store";
+import { getHistory } from "@/lib/store";
+import { analisisRemoto, listarRemotos, summaryAAnalisis } from "@/lib/api-client";
 import { formatDate, severityLabels, riesgoPillTone, scoreTone } from "@/lib/utils";
-import { EmptyState, LinkBtn, Meter, Pill } from "@/components/ui";
+import { Alert, EmptyState, LinkBtn, Meter, Pill } from "@/components/ui";
+
+function sortByDate(list: Analysis[]): Analysis[] {
+  return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
 
 export default function DashboardPage() {
   const [history, setHistory] = useState<Analysis[]>([]);
   const [ready, setReady] = useState(false);
+  const [remoteState, setRemoteState] = useState<"idle" | "ok" | "error">("idle");
 
   useEffect(() => {
-    setHistory(getHistory());
+    let alive = true;
+    const local = getHistory();
+    setHistory(sortByDate(local));
     setReady(true);
+
+    (async () => {
+      const rows = await listarRemotos();
+      if (!alive) return;
+      if (!rows) {
+        setRemoteState("error");
+        return;
+      }
+      setRemoteState("ok");
+      const merged = new Map(local.map((a) => [a.id, a]));
+      for (const row of rows) {
+        if (!merged.has(row.id)) merged.set(row.id, summaryAAnalisis(row));
+      }
+      // El panel necesita dimensiones y hallazgos: se pide el detalle del más
+      // reciente si no está completo en la copia local.
+      const newest = rows[0];
+      if (newest && !local.some((a) => a.id === newest.id && a.dimensions.length > 0)) {
+        const detail = await analisisRemoto(newest.id);
+        if (alive && detail) merged.set(detail.id, detail);
+      }
+      if (alive) setHistory(sortByDate([...merged.values()]));
+    })();
+
+    return () => { alive = false; };
   }, []);
 
-  const lastLive = latestLiveAnalysis();
+  const lastLive = history.find((a) => a.dataMode === "live") ?? null;
   const recent = history.slice(0, 5);
   const riskCount = lastLive
     ? lastLive.findings.filter((f) => !f.title.startsWith("Observación positiva")).length
@@ -35,6 +69,13 @@ export default function DashboardPage() {
           <LinkBtn href="/app/historial" variant="ghost" size="sm"><Archive className="h-3.5 w-3.5" />Historial</LinkBtn>
         </div>
       </header>
+
+      {remoteState === "error" ? (
+        <Alert kind="warning" title="Modo local">
+          No se pudo contactar la base de datos. Se muestra la copia guardada en este navegador; los análisis nuevos
+          pueden fallar hasta que el servicio se restablezca.
+        </Alert>
+      ) : null}
 
       {!ready ? (
         <div className="grid gap-4 md:grid-cols-3">
@@ -72,7 +113,7 @@ export default function DashboardPage() {
                   <span className={`text-[12.5px] ${d.evaluated ? "text-muted" : "text-muted opacity-60"}`}>
                     {d.label}{!d.evaluated ? " · n/e" : ""}
                   </span>
-                  <Meter value={d.value} sm />
+                  <Meter value={d.value} sm label={`${d.label}: ${d.evaluated ? d.value : "no evaluada"} de 100`} />
                   <span className="tnum text-right text-[12px] font-medium">{d.evaluated ? d.value : "—"}</span>
                 </div>
               ))}
@@ -138,7 +179,7 @@ export default function DashboardPage() {
       ) : (
         <EmptyState
           icon={<Radar className="h-6 w-6" />}
-          title="Aún no hay análisis en este navegador"
+          title="Aún no hay análisis en este espacio de trabajo"
           text="Analiza un sitio público para obtener tu primer informe con evidencia real, o explora el informe de muestra (ilustrativo, sin conexión)."
           action={
             <div className="flex flex-wrap justify-center gap-3">
@@ -149,10 +190,13 @@ export default function DashboardPage() {
         />
       )}
 
+      <AsistenteIA />
       {lastLive ? (
         <p className="flex items-start gap-2 rounded-2xl border border-dashed border-line p-4 text-[12px] leading-5 text-muted">
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 flex-none" />
-          El historial vive en el almacenamiento local de este navegador (sin cuentas ni base de datos en esta fase). Los resultados reflejan observaciones de la fecha de ejecución y no constituyen un dictamen legal.
+          El historial se sincroniza con el servidor y mantiene una copia local en este navegador. El acceso está
+          vinculado a este navegador mediante una cookie privada; todavía no hay cuentas para recuperarlo en otro
+          dispositivo. Los resultados reflejan observaciones de la fecha de ejecución y no constituyen un dictamen legal.
         </p>
       ) : null}
     </div>

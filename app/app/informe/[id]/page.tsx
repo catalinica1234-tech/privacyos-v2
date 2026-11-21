@@ -64,6 +64,7 @@ export default function InformePage() {
   const [ready, setReady] = useState(false);
   const [history, setHistory] = useState<Analysis[]>([]);
   const [tab, setTab] = useState("resumen");
+  const [hallazgoDestacado, setHallazgoDestacado] = useState<{ id: string; n: number } | null>(null);
 
   useEffect(() => {
     setHistory(getHistory());
@@ -79,16 +80,17 @@ export default function InformePage() {
 
   // Respaldo servidor: si el informe no está en este navegador (ej. viene de
   // la base de datos o se abrió en otro equipo), se pide a /api/analyses/{id}.
-  const [remota, setRemota] = useState<Analysis | null | undefined>(undefined); // undefined = sin decidir
-  const necesitaRemota = local === null && /^PS-[A-Z0-9]{6}$/.test(id);
+  const [respuesta, setRespuesta] = useState<{ id: string; analysis: Analysis | null }>();
+  const remota = respuesta?.id === id ? respuesta.analysis : undefined;
+  const necesitaRemota = /^PS-[A-Z0-9]{6}$/.test(id);
   useEffect(() => {
     if (!necesitaRemota) return;
     let vivo = true;
-    analisisRemoto(id).then((a) => { if (vivo) setRemota(a); });
+    analisisRemoto(id).then((a) => { if (vivo) setRespuesta({ id, analysis: a }); });
     return () => { vivo = false; };
   }, [necesitaRemota, id]);
 
-  const analysis: Analysis | null = local ?? (remota ?? null);
+  const analysis: Analysis | null = remota ?? local;
 
   if (!ready || (local === null && necesitaRemota && remota === undefined)) {
     return (
@@ -197,13 +199,29 @@ export default function InformePage() {
         onChange={setTab}
       />
 
-      {tab === "resumen" ? <Resumen a={analysis} worst={worst} /> : null}
-      {tab === "hallazgos" ? <Hallazgos a={analysis} /> : null}
-      {tab === "evidencias" ? <Evidencias a={analysis} /> : null}
-      {tab === "plan" ? <Plan a={analysis} /> : null}
-      {tab === "normativa" ? <Normativa a={analysis} /> : null}
+      <div role="tabpanel" id="tab-panel-resumen" aria-labelledby="tab-tab-resumen" tabIndex={0} hidden={tab !== "resumen"} className="focus-visible:outline-none">
+        <Resumen a={analysis} worst={worst} />
+      </div>
+      <div role="tabpanel" id="tab-panel-hallazgos" aria-labelledby="tab-tab-hallazgos" tabIndex={0} hidden={tab !== "hallazgos"} className="focus-visible:outline-none">
+        <Hallazgos a={analysis} destacado={hallazgoDestacado} />
+      </div>
+      <div role="tabpanel" id="tab-panel-evidencias" aria-labelledby="tab-tab-evidencias" tabIndex={0} hidden={tab !== "evidencias"} className="focus-visible:outline-none">
+        <Evidencias a={analysis} />
+      </div>
+      <div role="tabpanel" id="tab-panel-plan" aria-labelledby="tab-tab-plan" tabIndex={0} hidden={tab !== "plan"} className="focus-visible:outline-none">
+        <Plan
+          a={analysis}
+          onVerHallazgo={(fid) => {
+            setHallazgoDestacado({ id: fid, n: Date.now() });
+            setTab("hallazgos");
+          }}
+        />
+      </div>
+      <div role="tabpanel" id="tab-panel-normativa" aria-labelledby="tab-tab-normativa" tabIndex={0} hidden={tab !== "normativa"} className="focus-visible:outline-none">
+        <Normativa a={analysis} />
+      </div>
 
-      <AsistenteIA analysis={analysis} className="no-print" />
+      <AsistenteIA key={analysis.id} analysis={remota ?? undefined} className="no-print" />
     </div>
   );
 }
@@ -281,11 +299,23 @@ function Resumen({ a, worst }: { a: Analysis; worst: Record<string, number> }) {
 }
 
 /* ── Hallazgos ── */
-function Hallazgos({ a }: { a: Analysis }) {
+function Hallazgos({ a, destacado }: { a: Analysis; destacado: { id: string; n: number } | null }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState("todos");
   const [severity, setSeverity] = useState("todas");
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (!destacado) return;
+    setOpen((prev) => new Set(prev).add(destacado.id));
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`finding-${destacado.id}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus({ preventScroll: true });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [destacado]);
 
   const filtered = a.findings.filter(
     (f) =>
@@ -306,8 +336,9 @@ function Hallazgos({ a }: { a: Analysis }) {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-2 no-print">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar hallazgo…" className="input pl-9" />
+          <label htmlFor="buscar-hallazgo" className="sr-only">Buscar hallazgo por identificador o título</label>
+          <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" aria-hidden="true" />
+          <input id="buscar-hallazgo" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar hallazgo…" className="input pl-9" type="search" />
         </div>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="select w-auto" aria-label="Filtro por estado">
           <option value="todos">Todos los estados</option>
@@ -318,6 +349,10 @@ function Hallazgos({ a }: { a: Analysis }) {
           {(["critico", "alto", "medio", "bajo"] as const).map((s) => <option key={s} value={s}>{severityLabels[s]}</option>)}
         </select>
       </div>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        {filtered.length} hallazgo(s) coinciden con los filtros actuales.
+      </p>
 
       {filtered.length === 0 ? (
         <EmptyState icon={<Radar className="h-5 w-5" />} title="Sin hallazgos para este filtro" text="Prueba con otros filtros o revisa la pestaña de evidencias." />
@@ -330,18 +365,18 @@ function Hallazgos({ a }: { a: Analysis }) {
 
 function FindingCard({ f, a, open, toggle }: { f: Finding; a: Analysis; open: boolean; toggle: () => void }) {
   return (
-    <article id={`finding-${f.id}`} className="card overflow-hidden p-0">
-      <button onClick={toggle} className="flex w-full flex-wrap items-center gap-3 p-5 text-left" aria-expanded={open}>
+    <article id={`finding-${f.id}`} tabIndex={-1} aria-label={`Hallazgo ${f.id}: ${f.title}`} className="card overflow-hidden p-0 scroll-mt-24 focus-visible:outline-none">
+      <button onClick={toggle} className="flex w-full flex-wrap items-center gap-3 p-5 text-left" aria-expanded={open} aria-controls={`finding-body-${f.id}`}>
         <span className="code flex-none">{f.id}</span>
         <Pill tone={statusTone[f.status]} className="flex-none">{statusLabels[f.status]}</Pill>
         <Pill tone={riesgoPillTone[f.severity]} className="flex-none">{severityLabels[f.severity]}</Pill>
         <span className="pill pill-neutral flex-none">{f.priority}</span>
         <span className="min-w-0 flex-1 truncate font-disp text-[14.5px] font-semibold">{f.title}</span>
-        <ChevronDown className={cn("h-4 w-4 flex-none text-muted transition-transform", open && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 flex-none text-muted transition-transform", open && "rotate-180")} aria-hidden="true" />
       </button>
 
       {open ? (
-        <div className="border-t border-line-soft p-5 pt-4">
+        <div id={`finding-body-${f.id}`} className="border-t border-line-soft p-5 pt-4">
           <p className="text-[13.5px] leading-6">{f.explanation}</p>
           <div className="mt-4 grid gap-3 text-[12.5px] leading-5 text-muted">
             <p><span className="font-semibold text-ink">Impacto de negocio:</span> {f.businessImpact}</p>
@@ -429,7 +464,7 @@ function Evidencias({ a }: { a: Analysis }) {
 }
 
 /* ── Plan de acción ── */
-function Plan({ a }: { a: Analysis }) {
+function Plan({ a, onVerHallazgo }: { a: Analysis; onVerHallazgo: (id: string) => void }) {
   const groups: Array<{ key: string; label: string }> = [
     { key: "inmediata", label: "Inmediato" },
     { key: "30_dias", label: "Próximos 30 días" },
@@ -459,9 +494,13 @@ function Plan({ a }: { a: Analysis }) {
                   <span className="tag">Impacto {r.impact}</span>
                   <span className="tag">Esfuerzo {r.effort}</span>
                   {r.relatedFindingId ? (
-                    <a href={`#finding-${r.relatedFindingId}`} className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-bosque">
-                      Ver hallazgo {r.relatedFindingId} <ArrowRight className="h-3 w-3" />
-                    </a>
+                    <button
+                      type="button"
+                      onClick={() => onVerHallazgo(r.relatedFindingId!)}
+                      className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold text-bosque hover:underline"
+                    >
+                      Ver hallazgo {r.relatedFindingId} <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                    </button>
                   ) : null}
                 </div>
                 <h4 className="mt-3 font-disp text-[15px] font-semibold">{r.title}</h4>

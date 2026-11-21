@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { cn, scoreTone } from "@/lib/utils";
 
 /* ═══ Primitivas del sistema de diseño Serenidad ═══ */
@@ -49,7 +50,7 @@ export function Alert({ kind = "info", title, children }: { kind?: "info" | "suc
     danger: { cls: "border-[color:var(--c-risk-crit)]/30 bg-[color:var(--c-risk-crit-soft)]", icon: <XCircle className="h-4 w-4 text-[color:var(--c-risk-crit)]" /> },
   }[kind];
   return (
-    <div className={cn("flex gap-3 rounded-2xl border p-4", map.cls)}>
+    <div className={cn("flex gap-3 rounded-2xl border p-4", map.cls)} role={kind === "danger" ? "alert" : undefined}>
       <span className="mt-0.5 flex-none">{map.icon}</span>
       <div className="text-[13.5px] leading-6">
         {title ? <p className="font-disp font-semibold">{title}</p> : null}
@@ -63,17 +64,25 @@ export function EmptyState({ icon, title, text, action }: { icon: ReactNode; tit
   return (
     <div className="card card-quiet flex flex-col items-center gap-3 px-6 py-14 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[color:var(--c-bosque-soft)] text-[color:var(--c-bosque)]">{icon}</div>
-      <h3 className="font-disp text-lg font-semibold">{title}</h3>
+      <h2 className="font-disp text-lg font-semibold">{title}</h2>
       <p className="max-w-md text-[13.5px] text-muted">{text}</p>
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
   );
 }
 
-export function Meter({ value, sm }: { value: number; sm?: boolean }) {
+export function Meter({ value, sm, label }: { value: number; sm?: boolean; label?: string }) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
   return (
-    <span className={cn("meter block", sm && "meter-sm")}>
-      <span style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    <span
+      className={cn("meter block", sm && "meter-sm")}
+      role="progressbar"
+      aria-valuenow={v}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={label ?? "Puntaje sobre 100"}
+    >
+      <span style={{ width: `${v}%` }} />
     </span>
   );
 }
@@ -88,48 +97,136 @@ export function StatCard({ label, value, note, tone }: { label: string; value: R
   );
 }
 
-/* Pestañas controladas */
-export function Tabs({ tabs, active, onChange }: {
+/* Pestañas controladas con navegación por teclado (WAI-ARIA tabs). */
+export function Tabs({ tabs, active, onChange, idPrefix = "tab", label = "Secciones" }: {
   tabs: Array<{ id: string; label: string; badge?: ReactNode }>;
   active: string;
   onChange: (id: string) => void;
+  idPrefix?: string;
+  label?: string;
 }) {
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    let next = index;
+    if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+    if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = tabs.length - 1;
+    const target = tabs[next];
+    onChange(target.id);
+    document.getElementById(`${idPrefix}-tab-${target.id}`)?.focus();
+  };
+
   return (
-    <div className="flex gap-1 overflow-x-auto rounded-full bg-[color:var(--c-marfil)] p-1 no-print" role="tablist">
-      {tabs.map((t) => (
-        <button
-          key={t.id}
-          role="tab"
-          aria-selected={active === t.id}
-          onClick={() => onChange(t.id)}
-          className={cn(
-            "flex flex-none items-center gap-2 rounded-full px-4 py-2 font-disp text-[13px] font-medium transition-all",
-            active === t.id ? "bg-[color:var(--c-card)] text-ink shadow-soft" : "text-muted hover:text-ink",
-          )}
-        >
-          {t.label}
-          {t.badge}
-        </button>
-      ))}
+    <div className="flex gap-1 overflow-x-auto rounded-full bg-[color:var(--c-marfil)] p-1 no-print" role="tablist" aria-label={label}>
+      {tabs.map((t, i) => {
+        const selected = active === t.id;
+        return (
+          <button
+            key={t.id}
+            id={`${idPrefix}-tab-${t.id}`}
+            role="tab"
+            aria-selected={selected}
+            aria-controls={`${idPrefix}-panel-${t.id}`}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onChange(t.id)}
+            onKeyDown={(event) => onKeyDown(event, i)}
+            className={cn(
+              "flex flex-none items-center gap-2 rounded-full px-4 py-2 font-disp text-[13px] font-medium transition-all",
+              selected ? "bg-[color:var(--c-card)] text-ink shadow-soft" : "text-muted hover:text-ink",
+            )}
+          >
+            {t.label}
+            {t.badge}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-/* Modal / diálogo accesible mínimo */
+/* Modal / diálogo accesible: foco atrapado, Escape, restauración de foco. */
 export function Modal({ open, onClose, title, children }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
 }) {
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    previousFocus.current = document.activeElement as HTMLElement | null;
+    const bodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusTimer = window.setTimeout(() => {
+      const first = dialogRef.current?.querySelector<HTMLElement>(
+        "input, select, textarea, button:not([disabled]), a[href]",
+      );
+      (first ?? dialogRef.current)?.focus();
+    }, 0);
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusables = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        ),
+      ).filter((el) => el.offsetParent !== null);
+      if (focusables.length === 0) {
+        event.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = bodyOverflow;
+      previousFocus.current?.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-[80] grid place-items-center p-4">
-      <button aria-label="Cerrar" onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-      <div role="dialog" aria-modal="true" aria-label={title} className="card relative z-10 w-full max-w-lg p-6 animate-in">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="card relative z-10 w-full max-w-lg p-6 animate-in"
+      >
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h3 className="font-disp text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="btn btn-ghost btn-sm">Cerrar</button>
+          <h3 id={titleId} className="font-disp text-lg font-semibold">{title}</h3>
+          <button ref={closeRef} onClick={onClose} className="btn btn-ghost btn-sm">Cerrar</button>
         </div>
         {children}
       </div>

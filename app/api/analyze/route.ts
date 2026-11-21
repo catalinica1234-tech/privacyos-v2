@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { analyzeRequestSchema } from "@/lib/contracts";
 import { runAnalysis } from "@/lib/analyzer/engine";
+import { enforceRateLimit, jsonError, routeError } from "@/lib/http";
+import { assertSameOrigin, parseJsonBodyLimited } from "@/lib/request";
 
 /* ═════════════════════════════════════════════════════════════════
-   POST /api/analyze — Análisis REAL de una URL pública.
+   POST /api/analyze — Análisis REAL de una URL pública (sin persistir).
    Ejecuta validaciones de seguridad (SSRF), resolución DNS, una
    solicitud HTTP limitada y genera hallazgos con evidencia observada.
-   No existe backend persistente: el cliente guarda el resultado en
-   localStorage (migración planificada a Hito 2).
+   El cliente guarda el resultado en localStorage; /api/analyses es la
+   variante que además persiste.
    ═════════════════════════════════════════════════════════════════ */
 
 export const runtime = "nodejs";
@@ -15,50 +17,39 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(req: Request): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "URL_INVALIDA",
-        message: "El cuerpo de la petición no es un JSON válido.",
-        hint: "Envía { url, frameworkIds } como JSON.",
-      },
-      { status: 400 },
-    );
-  }
-
-  const parsed = analyzeRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "URL_INVALIDA",
-        message: "La solicitud no superó la validación de entrada.",
-        hint: first ? `${first.path.join(".")}: ${first.message}` : "Revisa los campos enviados.",
-      },
-      { status: 400 },
-    );
-  }
+  const limited = enforceRateLimit(req, { name: "analyze", limit: 10, windowMs: 10 * 60_000 });
+  if (limited) return limited;
 
   try {
+    assertSameOrigin(req);
+    const body = await parseJsonBodyLimited(req);
+    const parsed = analyzeRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return jsonError(
+        400,
+        "URL_INVALIDA",
+        "La solicitud no superó la validación de entrada.",
+        first ? `${first.path.join(".")}: ${first.message}` : "Revisa los campos enviados.",
+      );
+    }
+
     const result = await runAnalysis(parsed.data);
     if (!result.ok) {
-      return NextResponse.json(result, { status: result.code === "ERROR_INTERNO" ? 500 : 400 });
+      const status =
+        result.code === "ERROR_INTERNO"
+          ? 500
+          : result.code === "PROTOCOLO_NO_PERMITIDO" || result.code === "DESTINO_NO_SEGURO"
+            ? 403
+            : result.code === "SITIO_INACCESIBLE"
+              ? 502
+              : result.code === "DESCONECTADO"
+                ? 504
+                : 400;
+      return NextResponse.json(result, { status });
     }
     return NextResponse.json({ ok: true, analysis: result.analysis });
   } catch (err) {
-    return NextResponse.json(
-      {
-        ok: false,
-        code: "ERROR_INTERNO",
-        message: "Error inesperado mientras se ejecutaba el motor de análisis.",
-        hint: err instanceof Error ? err.message : "Vuelve a intentarlo en unos minutos.",
-      },
-      { status: 500 },
-    );
+    return routeError(err);
   }
 }

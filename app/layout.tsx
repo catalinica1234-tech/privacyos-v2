@@ -1,6 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme";
+
+/* Fuentes autoalojadas (SIL Open Font License). Evitan peticiones a
+   Google Fonts: mejor privacidad del visitante, sin dependencia externa
+   y compatibles con la CSP `font-src 'self'`. */
+const instrumentSans = localFont({
+  src: "./fonts/InstrumentSans-Variable.ttf",
+  variable: "--font-instrument",
+  display: "swap",
+  weight: "100 900",
+});
+
+const inter = localFont({
+  src: "./fonts/Inter-Variable.ttf",
+  variable: "--font-inter",
+  display: "swap",
+  weight: "100 900",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -16,6 +34,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  colorScheme: "light dark",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f7f6f2" },
     { media: "(prefers-color-scheme: dark)", color: "#121417" },
@@ -23,21 +42,16 @@ export const viewport: Viewport = {
 };
 
 /** Evita parpadeo de tema: aplica dark antes del primer paint. */
-const themeInitScript = `(function(){try{var p=JSON.parse(localStorage.getItem("privacyos.prefs.v1"))||{};var t=p.theme||"system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`;
+const themeInitScript = `(function(){try{var p=JSON.parse(localStorage.getItem("privacyos.prefs.v1"))||{};var t=p.theme||"system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.classList.toggle("contrast-high",p.contrast==="alto");}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={`${instrumentSans.variable} ${inter.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
+        <a href="#contenido-principal" className="skip-link">Saltar al contenido principal</a>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
