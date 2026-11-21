@@ -8,7 +8,7 @@
 
 - Abrir 4 pestañas y dejarlas listas: **(1)** URL de producción `https://privacyos-v2.vercel.app`,
   **(2)** colección Postman `docs/privacyos-hito2.postman_collection.json`, **(3)** `db/erd.mmd`
-  renderizado, **(4)** el informe técnico `docs/hito2-informe.pdf`.
+  renderizado, **(4)** el informe técnico `docs/HITO_2/documento-tecnico/hito2-informe.pdf`.
 - Celular de respaldo con la misma URL (si el portátil falla, la demo sigue).
 - Plan B ya implementado: si el proveedor de IA no responde, la app muestra mensaje amable y
   **sigue funcionando** — decirlo en voz alta si pasara: es una virtud del diseño.

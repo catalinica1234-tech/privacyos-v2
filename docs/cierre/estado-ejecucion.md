@@ -55,7 +55,7 @@ npm.cmd run start -- -p 3002
 
 - `docs/cierre/informe-final-26-preguntas.md`
 - `docs/testing/pruebas.md`
-- `docs/security/seguridad.md`
+- `docs/SEGURIDAD/seguridad.md`
 - `docs/evidence/indice-evidencias.md`
 - `docs/business/supuestos-modelo.md`
 - `.github/workflows/ci.yml`

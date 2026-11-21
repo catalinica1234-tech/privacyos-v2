@@ -29,4 +29,4 @@ Ejecuta `npm run typecheck`, `npm run lint`, `npm test` y `npm run build`. Con e
 
 Identifica la base que usa Vercel y verifica su respaldo antes de revisar el estado de las migraciones. `20261102000000_workspace_isolation` deja filas previas sin propietario fuera de los nuevos espacios. Revisa ese impacto antes de autorizar la migración. Configura credenciales directamente en el gestor de variables de Vercel. Tras un despliegue autorizado, verifica el alias, health, persistencia, aislamiento y asistente.
 
-[Integración Supabase, variables y plan de reversión](../deployment/integracion-supabase.md).
+[Integración Supabase, variables y plan de reversión](../../DESPLIEGUE/integracion-supabase.md).

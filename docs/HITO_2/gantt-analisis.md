@@ -2,7 +2,7 @@
 
 ## 1. Lectura honesta
 
-No hay historial de commits ni planificación oficial con fechas en el repositorio, por lo que **no se reconstruyen fechas exactas**. Este análisis usa semanas relativas (S1–S8) y se basa en el trabajo realmente observado: auditoría, correcciones, pruebas y documentación. El Gantt existente (`docs/hito2-gantt.md`, `docs/carta-gantt.html`) se conserva como planificación visual del Hito 2.
+No hay historial de commits ni planificación oficial con fechas en el repositorio, por lo que **no se reconstruyen fechas exactas**. Este análisis usa semanas relativas (S1–S8) y se basa en el trabajo realmente observado: auditoría, correcciones, pruebas y documentación. El Gantt existente (`docs/HITO_2/hito2-gantt.md`, `docs/HITO_2/carta-gantt.html`) se conserva como planificación visual del Hito 2.
 
 ## 2. Planificación de referencia
 

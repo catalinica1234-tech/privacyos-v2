@@ -58,7 +58,7 @@ No vende cumplimiento legal automático ni “certificación”. Vende **clarida
 
 **Por qué estos precios:** están por debajo de una hora de consultoría senior y por encima de una herramienta genérica. El valor está en la evidencia y el informe, no en el volumen de escaneos. El plan Consultora monetiza la necesidad de separar clientes; el diagnóstico único reduce la barrera de entrada.
 
-**Unit economics de planificación:** ARPU ponderado 5,6 UF/mes ≈ CLP 231.046; margen bruto año 3 ≈ 87,7 %; CAC de referencia CLP 250.000; CAC implícito base ≈ CLP 198.919. Son supuestos del modelo, no resultados. Ver [`../business/supuestos-modelo.md`](../business/supuestos-modelo.md).
+**Unit economics de planificación:** ARPU ponderado 5,6 UF/mes ≈ CLP 231.046; margen bruto año 3 ≈ 87,7 %; CAC de referencia CLP 250.000; CAC implícito base ≈ CLP 198.919. Son supuestos del modelo, no resultados. Ver [`../business/supuestos-modelo.md`](../../business/supuestos-modelo.md).
 
 ## 4. Go-to-market
 

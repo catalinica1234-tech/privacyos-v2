@@ -122,4 +122,4 @@ Reportes: [`lighthouse-home-final.report.html`](lighthouse-home-final.report.htm
 - Lighthouse 100 no es certificación WCAG.
 - Las pruebas locales no sustituyen una prueba en producción.
 
-> Para reproducir: [`../deployment/despliegue.md`](../deployment/despliegue.md), [`../testing/pruebas.md`](../testing/pruebas.md) y [`../cierre/estado-ejecucion.md`](../cierre/estado-ejecucion.md).
+> Para reproducir: [`../deployment/despliegue.md`](../DESPLIEGUE/despliegue.md), [`../testing/pruebas.md`](../testing/pruebas.md) y [`../cierre/estado-ejecucion.md`](../cierre/estado-ejecucion.md).

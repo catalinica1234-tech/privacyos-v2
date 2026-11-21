@@ -40,7 +40,7 @@
 | 22 | CSRF / same-origin | `assertSameOrigin` + `Sec-Fetch-Site`. | Implementado / Probado |
 | 23 | Validación de entrada | Zod + límites de cuerpo + formato de ID. | Implementado / Probado |
 | 24 | Errores seguros | `routeError`, 429/503, sin SQL/tenant. | Implementado / Probado |
-| 25 | OWASP Top 10 revisado | `docs/security`. | Documentado |
+| 25 | OWASP Top 10 revisado | `docs/SEGURIDAD`. | Documentado |
 | 26 | Ley 21.719 | Minimización, borrado, transparencia, límites. | Documentado / Parcial |
 | 27 | CRUD `sites` | `/api/sites` + `[id]`. | Implementado / Probado local |
 | 28 | CRUD `analyses` | `/api/analyses` + `[id]` + purga. | Implementado / Probado local |
@@ -54,14 +54,14 @@
 | 36 | CI | Workflow typecheck/lint/test/build. | Implementado (pendiente push) |
 | 37 | Pruebas E2E | Playwright. | Pendiente |
 | 38 | Accesibilidad automatizada | Lighthouse/axe. | Parcial |
-| 39 | Documentación de arquitectura | `docs/architecture`. | Documentado |
-| 40 | Documentación de seguridad | `docs/security`. | Documentado |
+| 39 | Documentación de arquitectura | `docs/ARQUITECTURA`. | Documentado |
+| 40 | Documentación de seguridad | `docs/SEGURIDAD`. | Documentado |
 | 41 | Documentación de pruebas | `docs/testing`. | Documentado |
-| 42 | Guía de despliegue | `docs/deployment`. | Documentado |
+| 42 | Guía de despliegue | `docs/DESPLIEGUE`. | Documentado |
 | 43 | Guion de video 2 min | `docs/video`. | Documentado |
 | 44 | 60 preguntas de defensa | `docs/defense`. | Documentado |
 | 45 | 26 preguntas de cierre | `docs/cierre`. | Documentado (lista oficial no disponible) |
-| 46 | Gantt y análisis | `docs/hito-2/gantt-analisis.md`. | Documentado |
+| 46 | Gantt y análisis | `docs/HITO_2/gantt-analisis.md`. | Documentado |
 | 47 | Modelo financiero con fórmulas/escenarios | `docs/business/modelo-financiero.xlsx`. | Implementado / Documentado |
 | 48 | Despliegue de cambios | Vercel. | **Pendiente de autorización** |
 | 49 | Migración en producción | Supabase. | **Pendiente de autorización** |
