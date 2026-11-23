@@ -61,3 +61,13 @@ Abre [http://localhost:3000](http://localhost:3000).
 - **Asignatura** — INGT Proyecto Semestral
 - **Institución** — Universidad Mayor
 - **Proyecto** — PRIVACYOS
+
+---
+
+## Manual de uso de PRIVACYOS
+
+¿Es tu primera vez utilizando la plataforma? Consulta la guía completa paso a paso:
+
+**[📘 Abrir el Manual de Uso de PRIVACYOS](docs/HITO_3/manuales/manual-de-uso.md)**
+
+El manual explica cómo ingresar a la aplicación, iniciar un análisis, seleccionar los marcos disponibles, interpretar hallazgos y evidencias, consultar el historial, utilizar el asistente inteligente y resolver problemas frecuentes.
