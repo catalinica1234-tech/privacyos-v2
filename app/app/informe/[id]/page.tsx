@@ -94,8 +94,18 @@ export default function InformePage() {
         },
         dimensions: Array.isArray(remota.dimensions) ? remota.dimensions : [],
         evidence: Array.isArray(remota.evidence) ? remota.evidence : [],
-        findings: Array.isArray(remota.findings) ? remota.findings : [],
-        recommendations: Array.isArray(remota.recommendations) ? remota.recommendations : [],
+        findings: Array.isArray(remota.findings)
+          ? remota.findings.filter((item) => item && typeof item === "object").map((item) => ({
+              ...item,
+              id: typeof item.id === "string" ? item.id : "F-SIN-ID",
+              title: typeof item.title === "string" ? item.title : "Hallazgo sin título",
+              evidenceIds: Array.isArray(item.evidenceIds) ? item.evidenceIds : [],
+              frameworks: Array.isArray(item.frameworks) ? item.frameworks : [],
+            }))
+          : [],
+        recommendations: Array.isArray(remota.recommendations)
+          ? remota.recommendations.filter((item) => item && typeof item === "object")
+          : [],
         engineNotes: Array.isArray(remota.engineNotes) ? remota.engineNotes : [],
       } as Analysis)
     : undefined;
