@@ -8,7 +8,7 @@ PRIVACYOS es una plataforma de análisis de privacidad digital que identifica se
 
 ## Accede a PRIVACYOS
 
-**[Abrir la aplicación web](https://privacyos-v2.vercel.app/)** · **[Ver presentación](https://privacyos-v2.vercel.app/presentacion-hito-2.html)**
+**[Abrir la aplicación web](https://privacyos-v2.vercel.app/)** · **[Abrir presentación](https://privacyos-hito2-presentacion-8h88bxy73-privacyos.vercel.app)**
 
 ![Captura del panel de PRIVACYOS](docs/evidence/capturas/dashboard.png)
 
