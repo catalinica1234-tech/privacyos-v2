@@ -29,7 +29,7 @@ La persistencia, el aislamiento entre workspaces y el asistente se verificaron e
 
 | Hito | Contenido |
 | --- | --- |
-| [Hito 1](docs/HITO_1/) | Propuesta, láminas, enlace al prototipo, mapa del producto y arquitectura inicial. |
+| [Informe Hito 1](docs/HITO_1/) | Informe, láminas, enlace al prototipo, mapa del producto y arquitectura inicial. |
 | [Hito 2](docs/HITO_2/) | Documento técnico, interfaz de programación, modelo de datos, script de creación y colección de pruebas. |
 | [Hito 3](docs/HITO_3/) | Producto funcional y manuales. El índice distingue los materiales disponibles de los entregables pendientes. |
 
