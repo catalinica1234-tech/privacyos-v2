@@ -73,7 +73,32 @@ export default function InformePage() {
     return () => { vivo = false; };
   }, [necesitaRemota, id]);
 
-  const analysis = remota?.dataMode === "live" ? remota : undefined;
+  // Normaliza colecciones opcionales antes de renderizar. Un payload antiguo o
+  // incompleto no debe romper toda la vista al ejecutar .filter()/.map().
+  const analysis = remota?.dataMode === "live"
+    ? ({
+        ...remota,
+        accessibility: {
+          reachable: Boolean(remota.accessibility?.reachable),
+          finalUrl: remota.accessibility?.finalUrl ?? null,
+          httpStatus: remota.accessibility?.httpStatus ?? null,
+          durationMs: remota.accessibility?.durationMs ?? null,
+          responseBytes: remota.accessibility?.responseBytes ?? null,
+          redirects: Array.isArray(remota.accessibility?.redirects) ? remota.accessibility.redirects : [],
+        },
+        input: {
+          ...remota.input,
+          url: remota.input?.url ?? "",
+          host: remota.input?.host ?? remota.input?.url ?? "Sitio analizado",
+          frameworkIds: Array.isArray(remota.input?.frameworkIds) ? remota.input.frameworkIds : [],
+        },
+        dimensions: Array.isArray(remota.dimensions) ? remota.dimensions : [],
+        evidence: Array.isArray(remota.evidence) ? remota.evidence : [],
+        findings: Array.isArray(remota.findings) ? remota.findings : [],
+        recommendations: Array.isArray(remota.recommendations) ? remota.recommendations : [],
+        engineNotes: Array.isArray(remota.engineNotes) ? remota.engineNotes : [],
+      } as Analysis)
+    : undefined;
 
   if (necesitaRemota && result === undefined) {
     return (
