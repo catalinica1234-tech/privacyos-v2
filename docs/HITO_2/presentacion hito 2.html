@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>PRIVACYOS · Informe técnico Hito 2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{
+  --bg:#f5f4ee;
+  --paper:#fffefa;
+  --ink:#172a24;
+  --muted:#64736b;
+  --line:#dce4dc;
+  --forest:#1d5944;
+  --mint:#d8eee3;
+  --teal:#2b8276;
+  --blue:#4267a9;
+  --blue-soft:#e8eefb;
+  --gold:#ba8730;
+  --gold-soft:#f8efd9;
+  --red:#a74444;
+  --shadow:0 18px 55px #183b2b12;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif}
+button,a{font:inherit}
+button{cursor:pointer}
+a{color:var(--forest)}
+code{font-family:'Consolas','Courier New',monospace;font-size:.92em;background:#edf4ef;color:var(--forest);padding:2px 6px;border-radius:6px}
+
+.shell{height:100dvh;display:grid;grid-template-rows:66px 1fr 64px}
+.top{display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,4vw,58px);border-bottom:1px solid var(--line);background:#fffefaed;backdrop-filter:blur(12px);z-index:3}
+.brand{display:flex;align-items:center;gap:11px;font-family:Manrope,sans-serif;font-weight:800;letter-spacing:-.04em}
+.mark{width:34px;height:34px;border-radius:11px;background:var(--forest);color:white;display:grid;place-items:center;font-size:17px}
+.brand small{display:block;font:600 9px 'DM Sans';letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.topright{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px}
+
+.stage{position:relative;overflow:hidden}
+.deck{height:100%;overflow:auto;scroll-snap-type:y mandatory;scroll-behavior:smooth}
+.slide{min-height:100%;scroll-snap-align:start;display:flex;align-items:center;padding:clamp(25px,4vw,54px) clamp(22px,6vw,90px);position:relative}
+.inner{width:min(1180px,100%);margin:auto}
+
+.eyebrow{display:flex;align-items:center;gap:9px;color:var(--forest);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em}
+.eyebrow:before{content:'';height:2px;width:25px;background:var(--teal)}
+h1,h2,h3{font-family:Manrope,sans-serif;letter-spacing:-.055em;margin:0}
+h1{font-size:clamp(46px,6.4vw,88px);line-height:.96;max-width:850px}
+h2{font-size:clamp(30px,4vw,52px);line-height:1.05;margin:12px 0 16px}
+h3{font-size:18px;line-height:1.25}
+.grad{color:var(--forest)}
+.lead{font-size:clamp(14px,1.4vw,18px);line-height:1.6;color:#4f6258;max-width:840px}
+.small{font-size:12.5px;line-height:1.55;color:var(--muted)}
+
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:var(--shadow)}
+.card p{margin:8px 0 0;font-size:12.5px;line-height:1.55;color:var(--muted)}
+.num{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:var(--mint);color:var(--forest);font-family:Manrope;font-weight:800;font-size:13px;margin-bottom:12px}
+.callout{border-left:3px solid var(--teal);background:#eaf4ed;padding:13px 16px;border-radius:0 13px 13px 0;font-size:12.5px;line-height:1.55;color:#315446}
+
+/* Portada */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center}
+.hero-art{min-height:350px;display:grid;place-items:center;position:relative}
+.orb{width:min(300px,70vw);aspect-ratio:1;border-radius:50%;border:1px solid #b4d8c4;display:grid;place-items:center;background:radial-gradient(circle at 40% 35%,#fffefa 0 18%,#e5f2e9 50%,#d4e9dd 100%);box-shadow:0 0 0 28px #e3efe6,0 0 0 29px #cfe3d4}
+.orb:before,.orb:after{content:'';position:absolute;border:1px solid #9bc9b1;border-radius:50%;width:250px;height:125px;transform:rotate(35deg)}
+.orb:after{transform:rotate(-35deg)}
+.orb-center{z-index:1;text-align:center}
+.orb-center strong{font:800 36px Manrope;letter-spacing:-.08em;color:var(--forest)}
+.orb-center span{display:block;font-size:11px;color:var(--muted);margin-top:6px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:10px 13px;background:#fffefa;font-size:11px;color:var(--muted)}
+.stat b{display:block;font:800 16px Manrope;color:var(--ink)}
+
+/* Trazabilidad */
+.trace-grid{display:grid;gap:9px;margin-top:16px}
+.trace-row{display:grid;grid-template-columns:1fr 34px 1.45fr;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 15px}
+.trace-before{font-size:12px;color:var(--muted)}
+.trace-before b{display:block;color:var(--ink);font-family:Manrope;font-size:13px;margin-bottom:2px}
+.trace-arrow{text-align:center;color:var(--teal);font-weight:800;font-size:18px}
+.trace-after{font-size:12px;color:#315446}
+.trace-after b{display:block;color:var(--forest);font-family:Manrope;font-size:13px;margin-bottom:2px}
+
+/* Tablas mejoradas para exposición */
+.api-split{display:grid;grid-template-columns:1fr 1.25fr;gap:16px;margin-top:14px;align-items:start}
+.table-card{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--paper);box-shadow:var(--shadow)}
+.table-card-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#e9f3ec;border-bottom:1px solid #cde0d3}
+.table-card-head h3{font-size:14px;color:var(--forest);letter-spacing:-.02em}
+.table-card-head span{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--teal)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;text-align:left}
+th{background:#f7faf7;color:var(--muted);font-family:Manrope;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.08em;padding:9px 14px;border-bottom:1px solid var(--line)}
+td{padding:10px 14px;border-bottom:1px solid #eef3ee;color:var(--ink);vertical-align:middle;line-height:1.4}
+tbody tr:nth-child(even){background:#fafcf9}
+tbody tr:hover{background:#f0f7f2;transition:background .15s}
+tr:last-child td{border-bottom:none}
+
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:3px 8px;border-radius:7px;font:800 10px Manrope;letter-spacing:.05em}
+.b-post{background:#d8eee3;color:#154c39;border:1px solid #b6dec9}
+.b-get{background:#e8eefb;color:#2c4d87;border:1px solid #c6d5f5}
+.b-patch{background:#f8efd9;color:#8c6116;border:1px solid #ebd7ab}
+.b-del{background:#fae6e6;color:#962f2f;border:1px solid #f0c2c2}
+.b-ok{display:inline-block;padding:2px 8px;border-radius:6px;font:800 11px Manrope;background:#e6f4eb;color:#1d5944;border:1px solid #bfe0cb}
+.b-err{display:inline-block;padding:2px 6px;border-radius:6px;font:700 10.5px Manrope;background:#f7f4ee;color:#6b6459;border:1px solid #e4ddd0;margin-right:2px}
+
+/* Esquema de Base de Datos visual (Slide 8) */
+.db-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:18px;margin-top:16px}
+.db-entity{border:1px solid var(--line);border-radius:18px;background:var(--paper);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.db-head{padding:14px 18px;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.db-head h3{font-size:17px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.db-head .tag{background:#ffffff22;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.db-body{padding:16px 18px;flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.col-list{display:flex;flex-wrap:wrap;gap:7px}
+.col-pill{display:inline-flex;align-items:center;gap:6px;background:#f6f9f6;border:1px solid #dce6dd;border-radius:9px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink)}
+.col-pill .key{font:800 9px Manrope;padding:2px 5px;border-radius:4px;letter-spacing:.05em}
+.k-pk{background:var(--forest);color:#fff}
+.k-uq{background:var(--blue-soft);color:var(--blue)}
+.k-fk{background:var(--gold-soft);color:#8c6116}
+.k-json{background:var(--mint);color:var(--forest)}
+.db-idx{background:#f2f7f3;border:1px solid #d5e5d8;border-radius:12px;padding:11px 14px;font-size:11.5px;color:#315446}
+.db-idx b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--forest);margin-bottom:4px}
+
+/* Código / JSON */
+.codebox{background:#172a24;color:#e6f2ec;border-radius:14px;padding:14px 16px;font-family:'Consolas','Courier New',monospace;font-size:11.5px;line-height:1.5;overflow-x:auto;margin-top:10px}
+.codebox .k{color:#8ce0b8}
+.codebox .s{color:#f4d38c}
+.codebox .c{color:#89a397;font-style:italic}
+
+/* Capas */
+.layerlist{display:grid;gap:7px;margin-top:14px}
+.layer{display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px 14px;background:var(--paper)}
+.layer b{font-size:12px;color:var(--forest);font-family:Manrope}
+.layer span{font-size:11.5px;line-height:1.45;color:var(--muted)}
+
+/* Pasos / Recorrido */
+.steps-7{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.step{border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:13px}
+.step .n{font:800 21px Manrope;color:var(--teal)}
+.step b{display:block;font-size:12.5px;margin:5px 0 4px}
+.step p{font-size:11px;color:var(--muted);line-height:1.45;margin:0}
+
+/* Dos columnas / estados */
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:16px}
+.statebox{border-radius:16px;border:1px solid var(--line);padding:17px;background:var(--paper)}
+.statebox.real{border-color:#b8d8c3}
+.statebox.next{border-color:#e7d6ac}
+.statebox h3{font-size:16px}
+.statebox ul,.statebox ol{padding-left:18px;color:var(--muted);font-size:12px;line-height:1.65;margin:8px 0 0}
+
+/* Equipo & Cierre */
+.team{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.person{border:1px solid var(--line);border-radius:16px;background:var(--paper);padding:16px}
+.avatar{width:36px;height:36px;border-radius:11px;background:var(--mint);display:grid;place-items:center;font:800 12px Manrope;color:var(--forest);margin-bottom:10px}
+.person b{font-size:13.5px;display:block}
+.person span{display:block;color:var(--teal);font-size:11px;font-weight:700;margin-top:4px}
+.person p{font-size:11px;color:var(--muted);line-height:1.45;margin:7px 0 0}
+.quote{font:600 clamp(20px,2.7vw,32px)/1.28 Manrope;letter-spacing:-.04em;max-width:940px;color:var(--ink)}
+.refs{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.refs a{display:inline-block;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 12px;text-decoration:none;font-size:11px;font-weight:700}
+
+.status{display:inline-flex;align-items:center;gap:7px;font-size:10px;color:var(--forest);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.dot{width:7px;height:7px;border-radius:50%;background:#32966a}
+.footnote{font-size:10.5px;color:var(--muted);margin-top:12px}
+
+/* Footer navegación */
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:0 clamp(18px,4vw,58px);border-top:1px solid var(--line);background:#fffefaed}
+.progress{height:4px;width:min(230px,25vw);background:#e1e7e1;border-radius:99px;overflow:hidden}
+.progress i{display:block;width:0;height:100%;background:var(--teal);transition:width .25s}
+.controls{display:flex;align-items:center;gap:8px}
+.controls button{border:1px solid var(--line);border-radius:10px;background:var(--paper);padding:9px 12px;font-size:11px;font-weight:800;color:var(--ink)}
+.controls .primary{background:var(--forest);border-color:var(--forest);color:#fff}
+.counter{font-size:11px;color:var(--muted);min-width:60px;text-align:center;font-weight:600}
+
+@media(max-width:950px){
+  .api-split,.db-grid{grid-template-columns:1fr}
+}
+@media(max-width:850px){
+  .hero,.g2,.g3,.g4,.team,.twocol,.steps-7{grid-template-columns:1fr}
+  .trace-row{grid-template-columns:1fr;gap:4px}
+  .trace-arrow{transform:rotate(90deg)}
+  .layer{grid-template-columns:1fr;gap:4px}
+  .hero-art{min-height:200px}
+  .orb{width:180px}
+  .slide{align-items:flex-start}
+}
+@media print{
+  @page{size:13.333in 7.5in;margin:0}
+  html,body{width:auto;height:auto;overflow:visible;background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .shell{display:block;height:auto}
+  .top,.bottom{display:none!important}
+  .stage,.deck{overflow:visible;height:auto;scroll-snap-type:none}
+  .slide{display:flex!important;width:13.333in;height:7.5in;min-height:7.5in;max-height:7.5in;overflow:hidden;break-after:page;page-break-after:always;padding:.35in .58in;align-items:center;background:var(--bg)!important}
+  .slide:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="top">
+  <div class="brand"><span class="mark">P</span><span>PRIVACYOS<small>Informe técnico · Hito 2</small></span></div>
+  <div class="topright"><span>Universidad Mayor · 2026</span><span class="small">Navega con ← → · F pantalla completa</span></div>
+</header>
+
+<main class="stage"><div class="deck" id="deck">
+
+<!-- SLIDE 1: PORTADA -->
+<section class="slide" data-title="Portada"><div class="inner hero">
+  <div>
+    <div class="eyebrow">Arquitectura de desarrollo (móvil y web) · Hito 2</div>
+    <h1 style="margin-top:20px">De prototipo local a <span class="grad">persistencia relacional.</span></h1>
+    <p class="lead">PRIVACYOS fortalece su arquitectura mediante una API REST de recursos, validación estricta con Zod, base de datos PostgreSQL con Prisma y separación explícita por capas.</p>
+    <div class="stats">
+      <div class="stat"><b>API REST</b> Recursos sites &amp; analyses</div>
+      <div class="stat"><b>PostgreSQL</b> Prisma 6 en Supabase</div>
+      <div class="stat"><b>Monolito Modular</b> Handlers · Servicios · Repos</div>
+    </div>
+    <p class="footnote">Profesor: Carlos Muñoz · Universidad Mayor · 2026</p>
+  </div>
+  <div class="hero-art"><div class="orb"><div class="orb-center"><strong>PRIVACYOS</strong><span>Hito 2 · Backend &amp; Datos</span></div></div></div>
+</div></section>
+
+<!-- SLIDE 2: INTRODUCCIÓN Y EVOLUCIÓN -->
+<section class="slide" data-title="Introducción"><div class="inner">
+  <div class="eyebrow">01 · Introducción y evolución</div>
+  <h2>Consolidar la base técnica sin perder el foco.</h2>
+  <p class="lead">PRIVACYOS transforma señales observables de privacidad en informes con hallazgos, puntajes y recomendaciones explicables. En este hito evolucionamos la arquitectura sin confundir capacidades actuales con propuestas futuras.</p>
+  <div class="twocol">
+    <div class="statebox next">
+      <span style="color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.08em">BASE · HITO 1</span>
+      <h3 style="margin-top:8px">Prototipo web responsivo</h3>
+      <ul>
+        <li>Consultaba una página pública mediante análisis acotado.</li>
+        <li>Endpoint aislado <code>POST /api/analyze</code> sin persistencia en servidor.</li>
+        <li>Almacenamiento de historial exclusivamente en el navegador (<code>localStorage</code>).</li>
+      </ul>
+    </div>
+    <div class="statebox real">
+      <span class="status"><i class="dot"></i> Evolución · Hito 2</span>
+      <h3 style="margin-top:8px">Arquitectura REST y relacional</h3>
+      <ul>
+        <li>API REST completa para gestionar sitios y análisis ejecutados.</li>
+        <li>Persistencia relacional en PostgreSQL (Supabase) mediante Prisma 6.</li>
+        <li>Separación explícita entre rutas HTTP, contratos, servicios y repositorios.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:16px"><b>Alcance explícito:</b> cuentas, autenticación, crawling exhaustivo, comparación textual de políticas y monitorización continua no forman parte de este hito y no se presentan como entregadas.</div>
+</div></section>
+
+<!-- SLIDE 3: TRAZABILIDAD RESPECTO DEL HITO 1 -->
+<section class="slide" data-title="Trazabilidad"><div class="inner">
+  <div class="eyebrow">02 · Trazabilidad respecto del Hito 1</div>
+  <h2>Cinco saltos arquitectónicos verificables.</h2>
+  <div class="trace-grid">
+    <div class="trace-row">
+      <div class="trace-before"><b>Historial local</b> Almacenamiento en <code>localStorage</code></div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-after"><b>Datos persistentes en servidor</b> PostgreSQL en Supabase mediante Prisma 6 (mantiene respaldo local si falla la API).</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-before"><b>Análisis aislado</b> Solo <code>POST /api/analyze</code></div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-after"><b>CRUD para recursos</b> Operaciones REST para <code>sites</code> y <code>analyses</code> con respuestas HTTP definidas, manteniendo <code>/api/analyze</code>.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-before"><b>Motor separado</b> Lógica acoplada al endpoint</div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-after"><b>Responsabilidades por capas</b> Flujo <code>Route handlers → Servicios → Repositorios → Prisma</code> para mantenimiento y pruebas claras.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-before"><b>Sin tablas persistentes</b> Objetos volátiles en memoria</div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-after"><b>Tablas relacionadas con restricciones</b> Entidades <code>sites</code> y <code>analyses</code> vinculadas por <code>siteId</code> con integridad referencial.</div>
+    </div>
+    <div class="trace-row">
+      <div class="trace-before"><b>Interfaz funcional</b> Reportes visuales base</div>
+      <div class="trace-arrow">→</div>
+      <div class="trace-after"><b>Identidad conservada con apoyo</b> Mantiene la identidad visual y análisis acotado, sumando respaldo de datos y asistente explicativo opcional.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- SLIDE 4: DISEÑO DE LA API REST -->
+<section class="slide" data-title="API REST"><div class="inner">
+  <div class="eyebrow">03 · Diseño de la API REST</div>
+  <h2>Contratos HTTP para sitios y análisis.</h2>
+  <p class="small">Contratos validados con Zod (<code>lib/contracts.ts</code>). Respuestas JSON con envolvente uniforme de errores.</p>
+
+  <div class="api-split">
+    <div class="table-card">
+      <div class="table-card-head">
+        <h3>Recurso: Sitios</h3>
+        <span>/api/sites</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Método</th><th>Ruta y Entrada</th><th>HTTP</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge b-post">POST</span></td>
+            <td><code>/api/sites</code><br/><span class="small">JSON: <code>url</code>, <code>nombre?</code>, <code>notas?</code></span></td>
+            <td><span class="b-ok">201</span><br/><span class="b-err">400</span><span class="b-err">409</span><span class="b-err">500</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-get">GET</span></td>
+            <td><code>/api/sites</code><br/><span class="small">Listado de sitios registrados</span></td>
+            <td><span class="b-ok">200</span><br/><span class="b-err">500</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-patch">PATCH</span></td>
+            <td><code>/api/sites/{id}</code><br/><span class="small">JSON: <code>notas?</code></span></td>
+            <td><span class="b-ok">200</span><br/><span class="b-err">400</span><span class="b-err">404</span><span class="b-err">500</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-del">DELETE</span></td>
+            <td><code>/api/sites/{id}</code><br/><span class="small">Sin cuerpo (204 vacío)</span></td>
+            <td><span class="b-ok">204</span><br/><span class="b-err">404</span><span class="b-err">409</span><span class="b-err">500</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-card">
+      <div class="table-card-head">
+        <h3>Recurso: Análisis &amp; Motor</h3>
+        <span>/api/analyses · /api/analyze</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Método</th><th>Ruta y Entrada</th><th>HTTP</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge b-post">POST</span></td>
+            <td><code>/api/analyses</code> · <span class="small"><code>url</code>, <code>siteId?</code>, <code>frameworkIds[]</code></span></td>
+            <td><span class="b-ok">201</span> <span class="b-err">400</span><span class="b-err">403</span><span class="b-err">504</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-get">GET</span></td>
+            <td><code>/api/analyses</code> · <span class="small">query: <code>limit</code> (50), <code>siteId?</code></span></td>
+            <td><span class="b-ok">200</span> <span class="b-err">500</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-get">GET</span></td>
+            <td><code>/api/analyses/{id}</code> · <span class="small">ID formato <code>PS-XXXXXX</code></span></td>
+            <td><span class="b-ok">200</span> <span class="b-err">404</span><span class="b-err">500</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-patch">PATCH</span></td>
+            <td><code>/api/analyses/{id}</code> · <span class="small"><code>notas?</code>, <code>revisado?</code></span></td>
+            <td><span class="b-ok">200</span> <span class="b-err">400</span><span class="b-err">404</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-del">DELETE</span></td>
+            <td><code>/api/analyses/{id}</code> · <span class="small">Eliminación sin cuerpo</span></td>
+            <td><span class="b-ok">204</span> <span class="b-err">404</span><span class="b-err">500</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge b-post">POST</span></td>
+            <td><code>/api/analyze</code> · <span class="small">Ejecución rápida (no persiste)</span></td>
+            <td><span class="b-ok">200</span> <span class="b-err">400</span><span class="b-err">403</span><span class="b-err">504</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div></section>
+
+<!-- SLIDE 5: EJEMPLOS DE PAYLOADS, VERSIONADO Y PRUEBAS -->
+<section class="slide" data-title="Contratos y Pruebas"><div class="inner">
+  <div class="eyebrow">04 · Contratos, errores y pruebas</div>
+  <h2>Respuestas predecibles y control de fallos.</h2>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Crear análisis · <code>POST /api/analyses</code></h3>
+      <div class="codebox"><span class="c">// Request JSON</span>
+{
+  <span class="k">"url"</span>: <span class="s">"https://www.chile.gob.cl"</span>,
+  <span class="k">"frameworkIds"</span>: [<span class="s">"CL-19628"</span>, <span class="s">"CL-21719"</span>, <span class="s">"GDPR"</span>]
+}
+<span class="c">// Respuesta HTTP 201: objeto persistido con ID PS-XXXXXX, score y resultados</span></div>
+      <h3 style="margin-top:14px">Actualizar revisión · <code>PATCH /api/analyses/{id}</code></h3>
+      <div class="codebox">{ <span class="k">"notas"</span>: <span class="s">"priorizar hallazgo 2"</span>, <span class="k">"revisado"</span>: true }</div>
+    </div>
+    <div class="card">
+      <h3>Semántica de errores y versionado</h3>
+      <div class="codebox"><span class="c">// Envolvente uniforme de error</span>
+{ <span class="k">"ok"</span>: false, <span class="k">"code"</span>: <span class="s">"VALIDACION"</span>, <span class="k">"message"</span>: <span class="s">"..."</span> }</div>
+      <p><b>Códigos controlados:</b> <code>409</code> URL duplicada o sitio con análisis; <code>404</code> recurso ausente; <code>403</code> bloqueo anti-SSRF; <code>504</code> tiempo máximo excedido.</p>
+      <p><b>Versionado:</b> prefijo actual <code>/api</code>; el contrato establece introducir <code>/api/v1</code> ante cambios incompatibles o consumidores externos.</p>
+      <p><b>Verificación documentada:</b> colección <code>docs/privacyos-hito2.postman_collection.json</code> y script <code>scripts/test-crud.mjs</code> (21 verificaciones descritas en repositorio).</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- SLIDE 6: SEPARACIÓN DE RESPONSABILIDADES Y CAPAS -->
+<section class="slide" data-title="Capas"><div class="inner">
+  <div class="eyebrow">05 · Separación de responsabilidades</div>
+  <h2>Un monolito modular con límites claros.</h2>
+  <p class="small">Esta estructura evita que la vista realice consultas SQL o que los controladores HTTP concentren lógica de negocio.</p>
+  <div class="layerlist">
+    <div class="layer"><b><code>components/</code> y <code>app/</code></b><span>Capa de presentación y navegación de la interfaz web.</span></div>
+    <div class="layer"><b><code>lib/api-client.ts</code></b><span>Cliente de consumo de API y degradación explícita a <code>localStorage</code>.</span></div>
+    <div class="layer"><b><code>app/api/sites</code> y <code>analyses</code></b><span>Route handlers: reciben el método HTTP, validan entradas y serializan respuestas.</span></div>
+    <div class="layer"><b><code>lib/contracts.ts</code> &amp; <code>lib/http</code></b><span>Contratos Zod compartidos (URL, IDs, cuerpos) y normalización de errores HTTP.</span></div>
+    <div class="layer"><b><code>lib/services/</code></b><span>Reglas de negocio, coordinación del análisis y generación del ID <code>PS-XXXXXX</code>.</span></div>
+    <div class="layer"><b><code>lib/analyzer/</code></b><span>Motor de observación limitada del sitio, guardas de seguridad anti-SSRF, hallazgos y score.</span></div>
+    <div class="layer"><b><code>lib/repositories/</code> &amp; <code>lib/db</code></b><span>Operaciones de lectura/escritura y cliente Prisma reutilizable conectado a PostgreSQL.</span></div>
+    <div class="layer"><b><code>prisma/</code>, <code>db/</code>, <code>scripts/</code></b><span>Esquema, migraciones, script SQL reproducible, pruebas y documentación.</span></div>
+  </div>
+</div></section>
+
+<!-- SLIDE 7: RECORRIDO COMPLETO POST /API/ANALYSES -->
+<section class="slide" data-title="Flujo de petición"><div class="inner">
+  <div class="eyebrow">06 · Recorrido completo: POST /api/analyses</div>
+  <h2>Ciclo de vida de un análisis persistido.</h2>
+  <div class="steps-7">
+    <div class="step"><div class="n">01</div><b>Solicitud UI</b><p>La interfaz envía la URL objetivo y los marcos normativos seleccionados.</p></div>
+    <div class="step"><div class="n">02</div><b>Validación Zod</b><p>El route handler verifica la estructura del cuerpo JSON mediante contratos Zod.</p></div>
+    <div class="step"><div class="n">03</div><b>Coordinación</b><p>El servicio orquesta la ejecución y genera un identificador único <code>PS-XXXXXX</code>.</p></div>
+    <div class="step"><div class="n">04</div><b>Motor y SSRF</b><p>Valida protocolo, puertos, DNS y redirecciones; inspecciona HTML, headers y cookies.</p></div>
+    <div class="step"><div class="n">05</div><b>Persistencia</b><p>El repositorio usa Prisma para guardar score, <code>riskLevel</code> y payload <code>JSONB</code> en PostgreSQL.</p></div>
+    <div class="step"><div class="n">06</div><b>Respuesta 201</b><p>El servicio devuelve el resultado estructurado y el handler responde HTTP <code>201</code>.</p></div>
+    <div class="step"><div class="n">07</div><b>Presentación</b><p>La UI despliega el informe; ante indisponibilidad de API guarda respaldo local explícito.</p></div>
+    <div class="step" style="background:#eef6ef;border-color:#b8d8c3"><div class="n">✓</div><b>Trazabilidad</b><p>Cada hallazgo queda respaldado en base de datos y listo para consulta o revisión posterior.</p></div>
+  </div>
+</div></section>
+
+<!-- SLIDE 8: PERSISTENCIA Y MODELO RELACIONAL -->
+<section class="slide" data-title="Base de Datos"><div class="inner">
+  <div class="eyebrow">07 · Persistencia y modelo relacional</div>
+  <h2>Esquema híbrido: integridad relacional + JSONB.</h2>
+  <p class="small">Definido en <code>prisma/schema.prisma</code> y reproducible vía migración <code>20261026000000_init</code> o <code>db/init.sql</code>.</p>
+
+  <div class="db-grid">
+    <div class="db-entity">
+      <div class="db-head">
+        <h3>Tabla: sites</h3>
+        <span class="tag">Entidad Padre · 1:N</span>
+      </div>
+      <div class="db-body">
+        <div>
+          <p class="small" style="margin:0 0 8px;font-weight:700;color:var(--ink)">Columnas definidas:</p>
+          <div class="col-list">
+            <span class="col-pill"><span class="key k-pk">PK</span> id</span>
+            <span class="col-pill"><span class="key k-uq">UNIQUE</span> url</span>
+            <span class="col-pill">nombre</span>
+            <span class="col-pill">notas</span>
+            <span class="col-pill">fechas auditoría</span>
+          </div>
+        </div>
+        <div class="db-idx">
+          <b>Índice y regla de integridad</b>
+          <code>sites_url_key</code> garantiza URL única. Con <code>ON DELETE RESTRICT</code>, un sitio con análisis asociados no se puede eliminar directamente.
+        </div>
+      </div>
+    </div>
+
+    <div class="db-entity">
+      <div class="db-head" style="background:#24483b">
+        <h3>Tabla: analyses</h3>
+        <span class="tag">Entidad Hija · Resultados</span>
+      </div>
+      <div class="db-body">
+        <div>
+          <p class="small" style="margin:0 0 8px;font-weight:700;color:var(--ink)">Columnas definidas:</p>
+          <div class="col-list">
+            <span class="col-pill"><span class="key k-pk">PK</span> id</span>
+            <span class="col-pill">url</span>
+            <span class="col-pill">score (int)</span>
+            <span class="col-pill">riskLevel</span>
+            <span class="col-pill"><span class="key k-json">JSONB</span> payload</span>
+            <span class="col-pill">notas</span>
+            <span class="col-pill">revisado (bool)</span>
+            <span class="col-pill"><span class="key k-fk">FK</span> siteId (opc.)</span>
+            <span class="col-pill">fechas</span>
+          </div>
+        </div>
+        <div class="db-idx">
+          <b>Índices y almacenamiento flexible</b>
+          <code>analyses_createdAt_idx</code> (orden cronológico) y <code>analyses_siteId_idx</code> (filtro por sitio). <code>JSONB</code> conserva el informe completo sin proliferar tablas.
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- SLIDE 9: REPRODUCCIÓN DE BD Y GESTIÓN DE CREDENCIALES -->
+<section class="slide" data-title="Despliegue y Secretos"><div class="inner">
+  <div class="eyebrow">08 · Reproducción de BD y gestión de credenciales</div>
+  <h2>Entorno reproducible y manejo seguro de secretos.</h2>
+  <div class="twocol">
+    <div class="statebox real">
+      <span class="status"><i class="dot"></i> Reproducción de base de datos</span>
+      <ol>
+        <li>Preparar una instancia PostgreSQL accesible (Supabase).</li>
+        <li>Configurar <code>DATABASE_URL</code> en <code>.env.local</code> sin publicar secretos.</li>
+        <li>Ejecutar <code>npm install</code> y <code>npx prisma generate</code>.</li>
+        <li>Aplicar <code>npx prisma migrate deploy</code> o ejecutar <code>db/init.sql</code>.</li>
+        <li>Iniciar la app en <code>localhost:3000</code> y verificar con <code>scripts/test-crud.mjs</code>.</li>
+      </ol>
+    </div>
+    <div class="statebox next">
+      <span style="color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.08em">SEGURIDAD Y VARIABLES DE ENTORNO</span>
+      <ul>
+        <li><code>.env.example</code> documenta nombres de variables; <code>.gitignore</code> excluye archivos locales.</li>
+        <li><code>DATABASE_URL</code> se inyecta vía Vercel o <code>.env.local</code>.</li>
+        <li><code>GEMINI_API_KEY</code> opera exclusivamente en servidor; <code>ASSISTANT_ENABLED</code> condiciona el asistente.</li>
+        <li><b>Regla estricta:</b> nunca exponer tokens ni cadenas reales en repositorios o informes. La autenticación queda fuera del alcance de este hito.</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- SLIDE 10: FUNDAMENTO TÉCNICO Y BIBLIOGRAFÍA -->
+<section class="slide" data-title="Fundamento Técnico"><div class="inner">
+  <div class="eyebrow">09 · Referencias técnicas y fundamento</div>
+  <h2>Decisiones respaldadas por estándares.</h2>
+  <div class="grid g3" style="margin-top:18px">
+    <article class="card"><div class="num">01</div><h3>Next.js App Router</h3><p>Combina páginas de interfaz con route handlers HTTP en un único proyecto, apoyado en React y TypeScript para tipado estricto.</p></article>
+    <article class="card"><div class="num">02</div><h3>Zod en frontera</h3><p>Valida estructura y tipos de entrada antes de que los datos ingresen a los servicios de dominio.</p></article>
+    <article class="card"><div class="num">03</div><h3>Prisma + PostgreSQL</h3><p>Esquema declarativo, migraciones versionadas y consultas tipadas alojadas en Supabase.</p></article>
+    <article class="card"><div class="num">04</div><h3>OWASP Anti-SSRF</h3><p>Controles basados en la guía de prevención SSRF de OWASP aplicados antes de consultar URLs externas.</p></article>
+    <article class="card"><div class="num">05</div><h3>Repositorio y Artefactos</h3><p>Código fuente, documentación de API (<code>docs/api.md</code>), esquema Prisma y script <code>db/init.sql</code> auditables en GitHub.</p></article>
+    <article class="card"><div class="num">06</div><h3>Declaración de uso de IA</h3><p>ChatGPT (OpenAI) y Napkin AI fueron utilizados como apoyo en redacción, organización y diagramas, bajo revisión y validación técnica del equipo.</p></article>
+  </div>
+</div></section>
+
+<!-- SLIDE 11: EQUIPO Y CIERRE -->
+<section class="slide" data-title="Conclusión y Equipo"><div class="inner">
+  <div class="eyebrow">10 · Conclusión y equipo</div>
+  <p class="quote">“El Hito 2 transforma PRIVACYOS desde un prototipo con almacenamiento en el navegador a una solución con persistencia relacional y contratos HTTP documentados.”</p>
+  <p class="lead" style="margin-top:12px">Se mejora la trazabilidad y mantenibilidad sin alterar el motor funcional del Hito 1, manteniendo explícitos sus límites (sin autenticación ni rastreo profundo; score orientativo). Próximos pasos: control de acceso por recurso y pruebas automatizadas en CI.</p>
+  <div class="team">
+    <article class="person"><div class="avatar">CR</div><b>Catalina Francoise Romero Pérez</b><span>Frontend · Integración · Revisión</span><p>Arquitectura de desarrollo (móvil y web) · Equipo PRIVACYOS.</p></article>
+    <article class="person"><div class="avatar">MI</div><b>Melisa Fernanda Ibáñez Delgado</b><span>Documentación · Investigación</span><p>Arquitectura de desarrollo (móvil y web) · Equipo PRIVACYOS.</p></article>
+    <article class="person"><div class="avatar">SS</div><b>Simón Andrés Salgado Heredia</b><span>Arquitectura · Presentación</span><p>Arquitectura de desarrollo (móvil y web) · Equipo PRIVACYOS.</p></article>
+  </div>
+  <div class="refs">
+    <a href="https://github.com/catalinica1234-tech/privacyos-v2" rel="noopener" target="_blank">Repositorio PRIVACYOS v2 ↗</a>
+    <a href="https://github.com/catalinica1234-tech/privacyos-v2/blob/main/prisma/schema.prisma" rel="noopener" target="_blank">Esquema Prisma ↗</a>
+    <a href="https://github.com/catalinica1234-tech/privacyos-v2/blob/main/db/init.sql" rel="noopener" target="_blank">Script SQL ↗</a>
+  </div>
+</div></section>
+
+</div></main>
+
+<footer class="bottom">
+  <div><div class="progress"><i id="progressFill"></i></div></div>
+  <div class="counter" id="counter">01 / 11</div>
+  <div class="controls">
+    <button id="prev">← Anterior</button>
+    <button class="primary" id="next">Siguiente →</button>
+    <button id="full" title="Pantalla completa (F)">⛶</button>
+  </div>
+</footer>
+</div>
+
+<script>
+(function(){
+  const deck=document.getElementById('deck'),
+        slides=[...document.querySelectorAll('.slide')],
+        counter=document.getElementById('counter'),
+        fill=document.getElementById('progressFill'),
+        prev=document.getElementById('prev'),
+        next=document.getElementById('next');
+  let index=0;
+
+  function go(n){
+    index=Math.max(0,Math.min(slides.length-1,n));
+    slides[index].scrollIntoView({behavior:'smooth',block:'start'});
+    update();
+  }
+
+  function update(){
+    let best=0,dist=Infinity;
+    const stageTop=document.querySelector('.stage').getBoundingClientRect().top;
+    slides.forEach((s,i)=>{
+      const d=Math.abs(s.getBoundingClientRect().top-stageTop);
+      if(d<dist){dist=d;best=i;}
+    });
+    index=best;
+    counter.textContent=String(index+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+    fill.style.width=((index+1)/slides.length*100)+'%';
+    prev.disabled=index===0;
+    next.disabled=index===slides.length-1;
+    next.textContent=index===slides.length-1?'Fin de presentación':'Siguiente →';
+  }
+
+  prev.addEventListener('click',()=>go(index-1));
+  next.addEventListener('click',()=>go(index+1));
+  deck.addEventListener('scroll',()=>window.requestAnimationFrame(update));
+  window.addEventListener('resize',update);
+
+  document.getElementById('full').addEventListener('click',()=>{
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
+    if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(index+1);}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(index-1);}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(slides.length-1);}
+    else if(e.key.toLowerCase()==='f'){
+      if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>
