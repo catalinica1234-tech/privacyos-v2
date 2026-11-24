@@ -60,6 +60,10 @@ export default function InformePage() {
   const id = params?.id ?? "";
 
   const [tab, setTab] = useState("resumen");
+  const [fechaEmision, setFechaEmision] = useState("");
+  useEffect(() => {
+    setFechaEmision(new Intl.DateTimeFormat("es-CL", { dateStyle: "long", timeStyle: "short" }).format(new Date()));
+  }, []);
   const [hallazgoDestacado, setHallazgoDestacado] = useState<{ id: string; n: number } | null>(null);
 
   const [respuesta, setRespuesta] = useState<{ id: string; result: Awaited<ReturnType<typeof consultarInforme>> }>();
@@ -184,7 +188,7 @@ export default function InformePage() {
 
         {/* Exportar */}
         <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-line-soft pt-5 no-print">
-          <button onClick={() => window.print()} className="btn btn-ghost btn-sm"><Printer className="h-3.5 w-3.5" />Imprimir / PDF</button>
+          <button onClick={() => window.print()} className="btn btn-primary btn-sm"><FileDown className="h-3.5 w-3.5" />Descargar PDF</button>
           <button onClick={() => downloadText(`${analysis.id}-informe.md`, toMarkdown(analysis))} className="btn btn-ghost btn-sm"><FileDown className="h-3.5 w-3.5" />Descargar .md</button>
           <button onClick={() => downloadText(`${analysis.id}-analisis.json`, JSON.stringify(analysis, null, 2), "application/json")} className="btn btn-ghost btn-sm"><Download className="h-3.5 w-3.5" />JSON</button>
           <CopyBtn text={toMarkdown(analysis)} />
@@ -193,13 +197,27 @@ export default function InformePage() {
       </header>
 
       <section className="report-cover card overflow-hidden p-6 md:p-8" aria-label="Ficha ejecutiva del informe">
+        <div className="report-document-brand mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-line-soft pb-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#1F4D3D] font-disp text-lg font-bold text-[#F7F6F2]">P</span>
+            <div>
+              <p className="font-disp text-lg font-bold tracking-[0.12em]">PRIVACYOS</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted">Inteligencia de privacidad digital</p>
+            </div>
+          </div>
+          <div className="text-left text-xs text-muted sm:text-right">
+            <p className="font-semibold text-ink">INFORME TÉCNICO DE PRIVACIDAD</p>
+            <p>Emitido: {fechaEmision || "—"}</p>
+            <p>Fecha del análisis: {formatDate(analysis.createdAt)}</p>
+          </div>
+        </div>
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0">
             <p className="eyebrow">Informe de inteligencia de privacidad</p>
             <h2 className="mt-2 font-disp text-2xl font-semibold tracking-tight md:text-3xl">{analysis.input.host}</h2>
             <p className="mt-2 max-w-3xl break-all text-sm text-muted">{analysis.input.url}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="tag">ID {analysis.id}</span><span className="tag">{formatDate(analysis.createdAt)}</span>
+              <span className="tag">ID de informe: {analysis.id}</span><span className="tag">Fecha de análisis: {formatDate(analysis.createdAt)}</span>
               <span className="tag">Motor {analysis.engineVersion}</span>
               <span className="tag">{analysis.dataMode === "live" ? "Análisis real" : "Muestra ilustrativa"}</span>
             </div>
