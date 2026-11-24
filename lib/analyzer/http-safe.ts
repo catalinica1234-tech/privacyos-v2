@@ -74,7 +74,7 @@ export interface SafeHttpFailure {
 export type SafeHttpResult = SafeHttpSuccess | SafeHttpFailure;
 
 const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
-const MAX_RAW_BYTES = 2_000_000;
+const MAX_RAW_BYTES = 3_000_000;
 
 function fail(code: SafeHttpCode, message: string, hint: string): SafeHttpFailure {
   return { ok: false, code, message, hint };
@@ -311,7 +311,7 @@ function mapNetworkError(err: unknown): SafeHttpFailure {
  */
 export async function safeFetch(options: SafeFetchOptions): Promise<SafeHttpResult> {
   const timeoutMs = Math.max(1500, Math.min(options.timeoutMs ?? 8000, 30_000));
-  const maxBodyBytes = Math.max(1024, Math.min(options.maxBodyBytes ?? 512_000, MAX_RAW_BYTES));
+  const maxBodyBytes = Math.max(1024, Math.min(options.maxBodyBytes ?? 1_500_000, MAX_RAW_BYTES));
   const maxRedirects = Math.max(0, Math.min(options.maxRedirects ?? 3, 5));
   const started = Date.now();
   const deadline = started + timeoutMs;
