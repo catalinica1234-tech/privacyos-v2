@@ -238,10 +238,10 @@ export async function runAnalysis(input: {
     });
     if (policyFetch.ok && policyFetch.status >= 200 && policyFetch.status < 300) {
       const policyType = policyFetch.headers.get("content-type") ?? "";
-      if (/^(text\\/html|application\\/xhtml\\+xml|text\\/plain)(?:;|$)/i.test(policyType.trim()) && !policyFetch.truncated) {
+      if (/^(text\/html|application\/xhtml\+xml|text\/plain)(?:;|$)/i.test(policyType.trim()) && !policyFetch.truncated) {
         policyText = policyFetch.body
-          .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, " ")
-          .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, " ")
+          .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
           .replace(/<[^>]+>/g, " ")
           .replace(/&nbsp;|&#160;/gi, " ")
           .replace(/&amp;/gi, "&")
@@ -249,7 +249,7 @@ export async function runAnalysis(input: {
           .replace(/&#39;|&apos;/gi, "'")
           .replace(/&lt;/gi, "<")
           .replace(/&gt;/gi, ">")
-          .replace(/\\s+/g, " ")
+          .replace(/\s+/g, " ")
           .toLowerCase();
         const signalTests: Array<[string, RegExp]> = [
           ["plazos o criterios de conservación", /conservaci[oó]n|retenci[oó]n|plazo[s]? de (?:conservaci[oó]n|almacenamiento)|durante el tiempo necesario/],
