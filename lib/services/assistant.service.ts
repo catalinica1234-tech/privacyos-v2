@@ -10,7 +10,7 @@ import type { Analysis, AssistantRequest } from "@/lib/contracts";
 
 const MODELOS_PREFERIDOS: string[] = (process.env.ASSISTANT_MODEL
   ? [process.env.ASSISTANT_MODEL, "gemini-3.1-flash-lite", "gemma-4-26b-a4b-it"]
-  : ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemma-4-26b-a4b-it"]
+  : ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
 ).filter((m, i, arr) => arr.indexOf(m) === i);
 const ENDPOINT = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -101,8 +101,8 @@ export async function explicar(pregunta: string, informe?: Analysis, history?: A
     },
   };
 
-  // Fallback en cadena: si un modelo está saturado, retirado o muy lento,
-  // prueba el siguiente (timeout por modelo 12 s; total ≤ 36 s del serverless).
+  // Prioriza modelos Flash-Lite de baja latencia. Como máximo dos intentos
+  // breves para evitar que una pregunta simple deje la interfaz esperando.
   let ultimoError: Error | null = null;
   const modelos = process.env.ASSISTANT_STRICT_MODEL === "1" ? MODELOS_PREFERIDOS.slice(0, 1) : MODELOS_PREFERIDOS;
   for (const model of modelos) {
@@ -136,7 +136,7 @@ async function pedirProvedor(
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify(body),
       cache: "no-store",
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(7_000),
     });
   } catch (err) {
     const e = err as Error & { name?: string };
