@@ -121,7 +121,43 @@ export async function explicar(pregunta: string, informe?: Analysis, history?: A
       if (!(ultimoError as ProveedorError).reintentable) throw ultimoError;
     }
   }
-  throw ultimoError ?? new Error("SIN_RESPUESTA");
+  // Contingencia determinista: el informe sigue siendo la fuente de verdad.
+  // Evita dejar al usuario sin explicación cuando Gemini devuelve 429/503 o timeout.
+  return generarRespuestaLocal(pregunta, informe);
+}
+
+function generarRespuestaLocal(pregunta: string, informe?: Analysis): string {
+  const aviso = "El proveedor de IA está temporalmente saturado; te entrego una explicación local basada únicamente en el informe.\n\n";
+  if (!informe) {
+    return aviso + "Puedo explicar conceptos generales de privacidad, pero en este momento no puedo consultar Gemini. Abre un informe para obtener una explicación basada en sus resultados.";
+  }
+
+  const dimensiones = informe.dimensions.filter((d) => d.evaluated);
+  const totalPeso = dimensiones.reduce((sum, d) => sum + d.weight, 0);
+  const formula = dimensiones.length
+    ? dimensiones.map((d) => `${d.label}: ${d.value}/100 (peso ${Math.round(d.weight * 100)}%)`).join("; ")
+    : "No hay dimensiones evaluadas suficientes para desglosar el puntaje.";
+  const scoreQuestion = /score|puntaje|puntuaci[oó]n|c[aá]lcul/i.test(pregunta);
+
+  if (scoreQuestion) {
+    return aviso +
+      `El Privacy Score de este informe es ${informe.score}/100. Se calcula como un promedio ponderado de las dimensiones que sí pudieron evaluarse: se multiplica el valor de cada dimensión por su peso y se divide por la suma de los pesos evaluados. Las dimensiones no evaluadas se excluyen; no se consideran como cero.\n\n` +
+      `Desglose: ${formula}\n\n` +
+      `Nivel de riesgo: ${informe.riskLevel ?? "sin clasificación"}. El score resume señales técnicas observadas; no es una certificación legal ni garantiza que un sitio sea seguro.`;
+  }
+
+  const q = pregunta.toLocaleLowerCase("es");
+  const tokens = q.split(/[^a-záéíóúñ0-9]+/i).filter((t) => t.length >= 4);
+  const relevantes = informe.findings
+    .map((f) => ({ f, hits: tokens.filter((t) => `${f.title} ${f.explanation} ${f.category}`.toLocaleLowerCase("es").includes(t)).length }))
+    .sort((a, b) => b.hits - a.hits || ["critico", "alto", "medio", "bajo"].indexOf(a.f.severity) - ["critico", "alto", "medio", "bajo"].indexOf(b.f.severity))
+    .filter((x) => x.hits > 0)
+    .slice(0, 2)
+    .map(({ f }) => `${f.title} (${f.severity}): ${f.explanation} Recomendación: ${f.recommendation}`);
+  const resumen = relevantes.length
+    ? relevantes.join("\\n\\n")
+    : `El informe registra ${informe.findings.length} hallazgos y ${informe.evidence.length} evidencias. Revisa las pestañas Hallazgos y Evidencias para consultar cada observación y su respaldo.`;
+  return aviso + `Informe de ${informe.input.host}: Privacy Score ${informe.score}/100; nivel de riesgo ${informe.riskLevel ?? "sin clasificación"}.\\n\\n${resumen}\\n\\nEsta respuesta local no sustituye una revisión de las evidencias originales.`;
 }
 
 type ProveedorError = Error & { reintentable?: boolean };
