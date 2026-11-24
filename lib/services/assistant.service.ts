@@ -10,7 +10,7 @@ import type { Analysis, AssistantRequest } from "@/lib/contracts";
 
 const MODELOS_PREFERIDOS: string[] = (process.env.ASSISTANT_MODEL
   ? [process.env.ASSISTANT_MODEL, "gemini-3.1-flash-lite", "gemma-4-26b-a4b-it"]
-  : ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+  : ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
 ).filter((m, i, arr) => arr.indexOf(m) === i);
 const ENDPOINT = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -116,6 +116,8 @@ export async function explicar(pregunta: string, informe?: Analysis, history?: A
       return texto;
     } catch (err) {
       ultimoError = err as Error;
+      // Diagnóstico por intento: código y modelo, nunca clave, prompt ni informe.
+      console.warn("[assistant] intento de proveedor fallido", `${model}:${ultimoError.message}`);
       if (!(ultimoError as ProveedorError).reintentable) throw ultimoError;
     }
   }
@@ -136,7 +138,7 @@ async function pedirProvedor(
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify(body),
       cache: "no-store",
-      signal: AbortSignal.timeout(7_000),
+      signal: AbortSignal.timeout(10_000),
     });
   } catch (err) {
     const e = err as Error & { name?: string };
