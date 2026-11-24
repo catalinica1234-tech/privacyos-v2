@@ -16,7 +16,7 @@ import { assertSameOrigin, parseJsonBodyLimited } from "@/lib/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 20;
 
 export async function POST(req: Request): Promise<NextResponse> {
   const limited = enforceRateLimit(req, { name: "assistant", limit: 20, windowMs: 10 * 60_000 });
@@ -61,7 +61,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     } catch (err) {
       const code = (err as Error).message ?? "";
       // Log de diagnóstico en el servidor (sin secretos ni contenido del informe).
-      console.error("[assistant] fallo del proveedor");
+      // Diagnóstico acotado: solo código interno/modelo, nunca clave ni prompt.
+      console.error("[assistant] fallo del proveedor", code);
       if (code === "GEMINI_429" || code === "GEMINI_503") {
         return NextResponse.json(
           {
