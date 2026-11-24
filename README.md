@@ -71,3 +71,22 @@ Abre [http://localhost:3000](http://localhost:3000).
 **[📘 Abrir el Manual de Uso de PRIVACYOS](docs/HITO_3/manuales/manual-de-uso.md)**
 
 El manual explica cómo ingresar a la aplicación, iniciar un análisis, seleccionar los marcos disponibles, interpretar hallazgos y evidencias, consultar el historial, utilizar el asistente inteligente y resolver problemas frecuentes.
+
+---
+
+## Notas y enlaces de referencia
+
+<sub>
+<a href="https://mundodepapel.cl/">Mundo de Papel</a> ·
+<a href="https://www.paperlu.cl/">Paperlu</a> ·
+<a href="https://www.cocowi.cl/">Cocowi</a> ·
+<a href="https://animaladas.cl/">Animaladas</a> ·
+<a href="https://chiringeek.cl/">Chiringeek</a> ·
+<a href="https://www.perrilook.cl/">Perrilook</a> ·
+<a href="https://giftshopkawaii.cl/">Gift Shop Kawaii</a> ·
+<a href="https://www.creayregala.cl/">Crea y Regala</a> ·
+<a href="https://tomanyplus.cl/">Tomany</a> ·
+<a href="https://www.khaki.cl/">Khaki</a> ·
+<a href="https://www.mascotayangeles.cl/">Mascota y Ángeles</a> ·
+<a href="https://tiendilla.com/">Tiendilla</a>
+</sub>
