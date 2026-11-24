@@ -61,9 +61,25 @@ export default function InformePage() {
 
   const [tab, setTab] = useState("resumen");
   const [fechaEmision, setFechaEmision] = useState("");
-  useEffect(() => {
-    setFechaEmision(new Intl.DateTimeFormat("es-CL", { dateStyle: "long", timeStyle: "short" }).format(new Date()));
-  }, []);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+  useEffect(() => { setFechaEmision(new Intl.DateTimeFormat("es-CL", { dateStyle: "long", timeStyle: "short" }).format(new Date())); }, []);
+  useEffect(() => () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); }, [pdfUrl]);
+  async function getPdf(): Promise<string> {
+    if (pdfUrl) return pdfUrl;
+    setPdfBusy(true); setPdfError("");
+    try {
+      const response = await fetch("/api/reports/pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(analysis) });
+      if (!response.ok) { const data = await response.json().catch(() => null); throw new Error(data?.message ?? "No se pudo generar el PDF."); }
+      const url = URL.createObjectURL(await response.blob()); setPdfUrl(url); return url;
+    } catch (error) { setPdfError(error instanceof Error ? error.message : "Error al generar el PDF."); throw error; }
+    finally { setPdfBusy(false); }
+  }
+  async function descargarPdf() {
+    try { const url = await getPdf(); const link = document.createElement("a"); link.href = url; link.download = analysis.id + "-informe-privacyos.pdf"; document.body.appendChild(link); link.click(); link.remove(); } catch { /* Error visible en pantalla. */ }
+  }
+  async function verPdf() { try { const url = await getPdf(); window.open(url, "_blank", "noopener,noreferrer"); } catch { /* Error visible en pantalla. */ } }
   const [hallazgoDestacado, setHallazgoDestacado] = useState<{ id: string; n: number } | null>(null);
 
   const [respuesta, setRespuesta] = useState<{ id: string; result: Awaited<ReturnType<typeof consultarInforme>> }>();
@@ -188,10 +204,12 @@ export default function InformePage() {
 
         {/* Exportar */}
         <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-line-soft pt-5 no-print">
-          <button onClick={() => window.print()} className="btn btn-primary btn-sm"><FileDown className="h-3.5 w-3.5" />Descargar PDF</button>
+          <button onClick={verPdf} disabled={pdfBusy} className="btn btn-ghost btn-sm"><FileText className="h-3.5 w-3.5" />{pdfBusy ? "Generando…" : "Ver PDF"}</button>
+          <button onClick={descargarPdf} disabled={pdfBusy} className="btn btn-primary btn-sm"><FileDown className="h-3.5 w-3.5" />{pdfBusy ? "Generando…" : "Descargar PDF"}</button>
           <button onClick={() => downloadText(`${analysis.id}-informe.md`, toMarkdown(analysis))} className="btn btn-ghost btn-sm"><FileDown className="h-3.5 w-3.5" />Descargar .md</button>
           <button onClick={() => downloadText(`${analysis.id}-analisis.json`, JSON.stringify(analysis, null, 2), "application/json")} className="btn btn-ghost btn-sm"><Download className="h-3.5 w-3.5" />JSON</button>
           <CopyBtn text={toMarkdown(analysis)} />
+          {pdfError ? <p role="alert" className="w-full text-xs text-[color:var(--c-risk-crit)]">{pdfError}</p> : null}
           <LinkBtn href={`/app/nuevo?url=${encodeURIComponent(analysis.input.url)}`} size="sm" className="ml-auto">Re-analizar</LinkBtn>
         </div>
       </header>
