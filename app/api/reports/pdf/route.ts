@@ -29,7 +29,7 @@ function makePdf(a:A):Uint8Array{
   const rule=(t:number)=>ops.push(rgb(C.line)+" RG 0.7 w 42 "+(H-t)+" m "+(W-42)+" "+(H-t)+" l S");
   const para=(v:unknown,x:number,t:number,w:number,s=9,lead=13,c=C.muted)=>{const ls=wrap(v,w,s);ls.forEach((l,i)=>text(l,x,t+i*lead,s,false,c));return t+ls.length*lead;};
   const footer=()=>{rule(802);text("PRIVACYOS  |  Informe tecnico de privacidad",42,811,7,false,C.muted);text("Pagina "+page,W-82,811,7,true,C.forest);};
-  const start=()=>{if(ops.length)pages.push(ops.join("\n"));ops=[];page++;rect(0,0,W,7,C.forest);text("PRIVACYOS",42,22,9,true,C.forest);text("INTELIGENCIA DE PRIVACIDAD DIGITAL",42,37,7,false,C.muted);rule(57);y=75;};
+  const start=()=>{if(ops.length){footer();pages.push(ops.join("\n"));}ops=[];page++;rect(0,0,W,7,C.forest);text("PRIVACYOS",42,22,9,true,C.forest);text("INTELIGENCIA DE PRIVACIDAD DIGITAL",42,37,7,false,C.muted);rule(57);y=75;};
   const ensure=(h:number)=>{if(y+h>780)start();};
   const section=(title:string,sub?:string)=>{ensure(sub?52:36);y+=8;rect(42,y,4,22,C.green);text(title.toUpperCase(),54,y+2,11,true,C.forest);y+=29;if(sub)y=para(sub,54,y,485,8,11)+7;else y+=4;};
   const card=(title:string,body:string[],accent=C.green)=>{const count=body.reduce((n,v)=>n+wrap(v,470,8.6).length,0);const h=29+count*12+12;ensure(h+7);rect(42,y,511,h,C.paper,C.line);rect(42,y,3,h,accent);text(title,55,y+10,9.2,true,C.ink);let cy=y+27;for(const v of body)cy=para(v,55,cy,475,8.6,12,C.muted)+3;y+=h+7;};
