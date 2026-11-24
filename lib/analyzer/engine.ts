@@ -20,13 +20,13 @@ import { resolveAndGuardHost, validateTargetUrl } from "./safety";
    real y declara sus limitaciones. No se generan datos inventados.
    ═════════════════════════════════════════════════════════════════ */
 
-export const ENGINE_VERSION = "1.1.0-sereno";
+export const ENGINE_VERSION = "1.2.0-sereno";
 
 const USER_AGENT =
   "PRIVACYOS-Scanner/1.0 (+https://github.com/; analisis de privacidad con fines de revision)";
 
-const timeoutMs = () => Number(process.env.ANALYZE_TIMEOUT_MS ?? 8000);
-const maxBodyBytes = () => Number(process.env.ANALYZE_MAX_BODY_BYTES ?? 512000);
+const timeoutMs = () => Number(process.env.ANALYZE_TIMEOUT_MS ?? 12000);
+const maxBodyBytes = () => Number(process.env.ANALYZE_MAX_BODY_BYTES ?? 1_500_000);
 const maxRedirects = () => Number(process.env.ANALYZE_MAX_REDIRECTS ?? 3);
 
 const SECURITY_HEADERS = [
@@ -313,7 +313,7 @@ export async function runAnalysis(input: {
   }
 
   if (body.truncated) {
-    engineNotes.push("La lectura del HTML se truncó al límite de bytes configurado; la cobertura es parcial.");
+    engineNotes.push("La lectura del HTML alcanzó el límite de bytes configurado; los resultados basados en ausencias quedan limitados y requieren revisión adicional.");
   }
   engineNotes.push("Se inspecciona únicamente la página inicial; no se realiza crawling de rutas internas.");
   engineNotes.push("No se extrae contenido de la política de privacidad ni se evalúa su redacción.");
