@@ -133,7 +133,6 @@ function generarRespuestaLocal(pregunta: string, informe?: Analysis): string {
   }
 
   const dimensiones = informe.dimensions.filter((d) => d.evaluated);
-  const totalPeso = dimensiones.reduce((sum, d) => sum + d.weight, 0);
   const formula = dimensiones.length
     ? dimensiones.map((d) => `${d.label}: ${d.value}/100 (peso ${Math.round(d.weight * 100)}%)`).join("; ")
     : "No hay dimensiones evaluadas suficientes para desglosar el puntaje.";
