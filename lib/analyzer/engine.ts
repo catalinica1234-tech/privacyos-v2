@@ -222,6 +222,49 @@ export async function runAnalysis(input: {
   }
 
   const titleTag = /<title>([^<]{1,160})</i.exec(hl)?.[1]?.trim() ?? null;
+  // 4.1 · Lectura acotada de la política enlazada (una sola URL, sin crawling).
+  // safeFetch vuelve a validar DNS, IP pública, redirecciones y límites.
+  let policyFetch: Awaited<ReturnType<typeof safeFetch>> | null = null;
+  let policyText = "";
+  let policySignals: string[] = [];
+  if (privacyLink) {
+    policyFetch = await safeFetch({
+      url: privacyLink.href,
+      userAgent: USER_AGENT,
+      accept: "text/html,application/xhtml+xml;q=0.9,text/plain;q=0.8",
+      timeoutMs: Math.min(5000, Math.max(2500, Math.round(timeout / 2))),
+      maxBodyBytes: 250_000,
+      maxRedirects: 2,
+    });
+    if (policyFetch.ok && policyFetch.status >= 200 && policyFetch.status < 300) {
+      const policyType = policyFetch.headers.get("content-type") ?? "";
+      if (/^(text\\/html|application\\/xhtml\\+xml|text\\/plain)(?:;|$)/i.test(policyType.trim()) && !policyFetch.truncated) {
+        policyText = policyFetch.body
+          .replace(/<script\\b[^>]*>[\\s\\S]*?<\\/script>/gi, " ")
+          .replace(/<style\\b[^>]*>[\\s\\S]*?<\\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/&nbsp;|&#160;/gi, " ")
+          .replace(/&amp;/gi, "&")
+          .replace(/&quot;|&#34;/gi, '"')
+          .replace(/&#39;|&apos;/gi, "'")
+          .replace(/&lt;/gi, "<")
+          .replace(/&gt;/gi, ">")
+          .replace(/\\s+/g, " ")
+          .toLowerCase();
+        const signalTests: Array<[string, RegExp]> = [
+          ["plazos o criterios de conservación", /conservaci[oó]n|retenci[oó]n|plazo[s]? de (?:conservaci[oó]n|almacenamiento)|durante el tiempo necesario/],
+          ["eliminación o supresión", /eliminaci[oó]n|supresi[oó]n|borrado de datos|datos ser[aá]n eliminados/],
+          ["minimización o limitación de datos", /minimizaci[oó]n|limitaci[oó]n de datos|datos estrictamente necesarios|m[ií]nimo necesario/],
+          ["finalidades del tratamiento", /finalidad(?:es)? del tratamiento|fines para los que|utilizamos sus datos/],
+          ["derechos de las personas", /derecho[s]? de acceso|rectificaci[oó]n|cancelaci[oó]n|oposici[oó]n|portabilidad/],
+          ["responsable o contacto", /responsable del tratamiento|contacto del responsable|delegado de protecci[oó]n|privacy officer/],
+          ["comunicación a terceros", /terceros|encargados del tratamiento|proveedores de servicios|compartimos sus datos/],
+        ];
+        policySignals = signalTests.filter(([, re]) => re.test(policyText)).map(([label]) => label);
+      }
+    }
+  }
+
   const metaDesc = /<meta[^>]+name=["']description["'][^>]+content=["']([^"']{1,200})["']/i.exec(hl)?.[1] ?? null;
   const langAttr = /<html[^>]+lang=["']([^"']+)["']/i.exec(hl)?.[1] ?? null;
 
@@ -312,11 +355,30 @@ export async function runAnalysis(input: {
     pushEvidence("robots", "robots.txt inaccesible", "El robots.txt no respondió dentro del límite de tiempo o no superó la validación de seguridad.", current.toString());
   }
 
+
+  if (privacyLink && policyFetch?.ok && policyFetch.status >= 200 && policyFetch.status < 300) {
+    if (policyText) {
+      pushEvidence(
+        "html",
+        "Contenido de política de privacidad consultado",
+        `Se leyó la página enlazada (${policyFetch.bodyBytes.toLocaleString("es-CL")} bytes). Señales textuales: ${policySignals.length ? policySignals.join("; ") : "no se identificaron las señales buscadas"}.`,
+        policyFetch.finalUrl.toString(),
+      );
+    } else {
+      pushEvidence(
+        "html",
+        "Enlace de privacidad consultado sin texto evaluable",
+        "La URL respondió, pero el contenido no fue HTML/texto completo dentro del límite seguro.",
+        policyFetch.finalUrl.toString(),
+      );
+    }
+  }
+
   if (body.truncated) {
     engineNotes.push("La lectura del HTML alcanzó el límite de bytes configurado; los resultados basados en ausencias quedan limitados y requieren revisión adicional.");
   }
   engineNotes.push("Se inspecciona únicamente la página inicial; no se realiza crawling de rutas internas.");
-  engineNotes.push("No se extrae contenido de la política de privacidad ni se evalúa su redacción.");
+  engineNotes.push(privacyLink ? "Se consultó como máximo una URL de política enlazada; el análisis de texto es heurístico y no constituye revisión legal." : "No se encontró un enlace de política en el HTML observado; no se rastrearon rutas internas.");
   engineNotes.push("Las relaciones con normativas son indicativas; PRIVACYOS no determina si una organización cumple la ley.");
   engineNotes.push(`Motor: PRIVACYOS ${ENGINE_VERSION}. Análisis real ejecutado contra el sitio, sin datos de muestra ni respuestas simuladas.`);
 
@@ -474,7 +536,7 @@ export async function runAnalysis(input: {
     }
   }
 
-  /* 6.4 · Transparencia (solo si la página principal respondió correctamente) */
+  /* 6.4 · Transparencia: detección del enlace y lectura acotada de política */
   if (privacyLink) {
     pushFinding({
       title: "Observación positiva: enlace a política de privacidad presente",
@@ -558,33 +620,33 @@ export async function runAnalysis(input: {
       id: "transparencia",
       label: "Transparencia de la información",
       weight: 0.25,
-      evaluated: htmlComplete,
+      evaluated: htmlComplete || Boolean(privacyLink),
       value: clamp(100 - (privacyLink ? 0 : 45) - (metaDesc ? 0 : 15) + (privacyLink && metaDesc ? 5 : 0)),
-      note: !htmlComplete ? "El HTML no estuvo disponible completo; no se puntuó esta dimensión." : `Enlace a política: ${privacyLink ? "detectado" : "no detectado"}.`,
+      note: htmlComplete ? `Enlace a política: ${privacyLink ? "detectado" : "no detectado"}.` : privacyLink ? "Se detectó un enlace de privacidad dentro del HTML parcial; resultado parcial." : "HTML parcial sin evidencia suficiente para evaluar transparencia.",
     },
     {
       id: "terceros",
       label: "Intercambio con terceros",
       weight: 0.2,
-      evaluated: htmlComplete,
+      evaluated: htmlComplete || trackers.length > 0,
       value: clamp(100 - trackers.length * 12),
-      note: !htmlComplete ? "La lectura no permite valorar la ausencia de señales de terceros." : `${trackers.length} tecnologías identificadas en la página inicial.`,
+      note: htmlComplete ? `${trackers.length} tecnologías identificadas en la página inicial.` : trackers.length ? `Se identificaron ${trackers.length} tecnología(s) en el HTML parcial; resultado mínimo.` : "HTML parcial: no se puede concluir ausencia de terceros.",
     },
     {
       id: "gobernanza",
       label: "Gobernanza básica",
       weight: 0.1,
-      evaluated: htmlComplete && robotsStatus !== null,
-      value: clamp(70 - (robotsStatus === 200 ? 0 : 20) - (privacyLink ? 0 : 25) + (robotsStatus === 200 ? 30 : 0)),
-      note: !htmlComplete || robotsStatus === null ? "Falta una lectura completa del HTML o respuesta de robots.txt." : `robots.txt: ${robotsStatus === 200 ? "disponible" : robotsStatus == null ? "sin respuesta" : `estado ${robotsStatus}`}.`,
+      evaluated: robotsStatus !== null,
+      value: clamp(robotsStatus === 200 ? 100 : 50),
+      note: robotsStatus === 200 ? "robots.txt respondió correctamente; la señal es técnica y no acredita gobernanza de datos." : robotsStatus !== null ? `robots.txt respondió HTTP ${robotsStatus}; no equivale por sí solo a incumplimiento.` : "No se obtuvo respuesta verificable de robots.txt.",
     },
     {
       id: "retencion",
       label: "Retención y minimización",
       weight: 0.15,
-      evaluated: false,
-      value: 0,
-      note: "Requiere revisión del contenido de la política y del backend: fuera del alcance de esta revisión.",
+      evaluated: Boolean(policyText),
+      value: policyText ? clamp(20 + policySignals.length * 11) : 0,
+      note: policyText ? `Lectura heurística de política: ${policySignals.length} de 7 señales buscadas (${policySignals.length ? policySignals.join("; ") : "ninguna identificada"}). No se verifica implementación real ni cumplimiento legal.` : "No se obtuvo texto completo y verificable de una política enlazada; retención y minimización no evaluables.",
     },
   ];
 
