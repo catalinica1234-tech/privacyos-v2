@@ -77,7 +77,7 @@ export default function InformePage() {
     finally { setPdfBusy(false); }
   }
   async function descargarPdf() {
-    try { const url = await getPdf(); const link = document.createElement("a"); link.href = url; link.download = analysis.id + "-informe-privacyos.pdf"; document.body.appendChild(link); link.click(); link.remove(); } catch { /* Error visible en pantalla. */ }
+    try { const url = await getPdf(); const link = document.createElement("a"); link.href = url; link.download = id + "-informe-privacyos.pdf"; document.body.appendChild(link); link.click(); link.remove(); } catch { /* Error visible en pantalla. */ }
   }
   async function verPdf() { try { const url = await getPdf(); window.open(url, "_blank", "noopener,noreferrer"); } catch { /* Error visible en pantalla. */ } }
   const [hallazgoDestacado, setHallazgoDestacado] = useState<{ id: string; n: number } | null>(null);
