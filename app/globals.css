@@ -237,6 +237,15 @@ a { color: inherit; }
 /* ── Impresión (.exportar informe / plan de acción) ─────────────── */
 @media print {
   .no-print { display: none !important; }
+  /* Imprime todas las secciones del informe aunque no se hayan abierto sus pestañas. */
+  .report-print-root [role="tabpanel"][hidden] { display: block !important; }
+  .report-print-root [role="tabpanel"] { break-before: page; page-break-before: always; }
+  .report-cover { break-after: page; page-break-after: always; }
+  .report-score-panel { background: #e7f0ea !important; color: #1b1e23 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .report-print-root a { color: #1b1e23; text-decoration: none; }
+  .report-print-root .card { break-inside: avoid-page; }
+  .report-print-root h1, .report-print-root h2, .report-print-root h3 { break-after: avoid-page; }
+  .no-print { display: none !important; }
   body { background: #fff; font-size: 12px; }
   .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
   main > .container { max-width: 100% !important; padding: 0 !important; }
