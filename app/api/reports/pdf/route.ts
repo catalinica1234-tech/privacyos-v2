@@ -4,7 +4,7 @@ import { Analysis } from "@/lib/contracts";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type A = typeof Analysis extends { _output: infer T } ? T : never;
+type A = import("@/lib/contracts").Analysis;
 const W = 595.28, H = 841.89;
 const C = {
   forest: [0.10,0.27,0.21], green: [0.16,0.38,0.30], mint: [0.91,0.96,0.93],
