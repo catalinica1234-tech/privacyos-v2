@@ -227,6 +227,7 @@ export async function runAnalysis(input: {
   let policyFetch: Awaited<ReturnType<typeof safeFetch>> | null = null;
   let policyText = "";
   let policySignals: string[] = [];
+  let policyEvidenceId: string | null = null;
   if (privacyLink) {
     policyFetch = await safeFetch({
       url: privacyLink.href,
@@ -358,7 +359,7 @@ export async function runAnalysis(input: {
 
   if (privacyLink && policyFetch?.ok && policyFetch.status >= 200 && policyFetch.status < 300) {
     if (policyText) {
-      pushEvidence(
+      policyEvidenceId = pushEvidence(
         "html",
         "Contenido de política de privacidad consultado",
         `Se leyó la página enlazada (${policyFetch.bodyBytes.toLocaleString("es-CL")} bytes). Señales textuales: ${policySignals.length ? policySignals.join("; ") : "no se identificaron las señales buscadas"}.`,
@@ -580,6 +581,23 @@ export async function runAnalysis(input: {
       recommendation: "Define una meta descripción con el propósito del sitio y el responsable del tratamiento si aplica.",
       priority: "P4",
       limitation: "Elemento informativo menor.",
+    });
+  }
+
+  /* 6.4.1 · Señales textuales de retención y minimización */
+  if (policyText && policyEvidenceId && policySignals.length < 3) {
+    pushFinding({
+      title: "La política presenta información limitada sobre retención o minimización",
+      status: "insuficiente",
+      severity: "bajo",
+      category: "retencion",
+      explanation: `En la política consultada se identificaron ${policySignals.length} de 7 grupos de señales textuales buscadas. La detección automática no determina si las obligaciones están satisfechas.`,
+      businessImpact: "Una descripción poco explícita puede dificultar que las personas comprendan cuánto tiempo se conservan sus datos y bajo qué criterios.",
+      evidenceIds: [policyEvidenceId],
+      frameworks: frameworkRefsFor(input.frameworkIds, "transparencia"),
+      recommendation: "Revisa manualmente la política y documenta plazos o criterios de conservación, eliminación, minimización y finalidades con lenguaje claro.",
+      priority: "P3",
+      limitation: "Resultado heurístico basado en palabras clave; puede omitir sinónimos, textos en otros idiomas o información desplegada dinámicamente. No es una conclusión legal.",
     });
   }
 
