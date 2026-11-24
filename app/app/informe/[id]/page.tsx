@@ -140,7 +140,7 @@ export default function InformePage() {
   for (const f of fFilter) worst[f.severity] += 1;
 
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-6">
+    <div className="report-print-root grid min-w-0 grid-cols-1 gap-6">
       {/* ── Cabecera del informe ── */}
       <header className="card p-6 md:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -191,6 +191,34 @@ export default function InformePage() {
           <LinkBtn href={`/app/nuevo?url=${encodeURIComponent(analysis.input.url)}`} size="sm" className="ml-auto">Re-analizar</LinkBtn>
         </div>
       </header>
+
+      <section className="report-cover card overflow-hidden p-6 md:p-8" aria-label="Ficha ejecutiva del informe">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="min-w-0">
+            <p className="eyebrow">Informe de inteligencia de privacidad</p>
+            <h2 className="mt-2 font-disp text-2xl font-semibold tracking-tight md:text-3xl">{analysis.input.host}</h2>
+            <p className="mt-2 max-w-3xl break-all text-sm text-muted">{analysis.input.url}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="tag">ID {analysis.id}</span><span className="tag">{formatDate(analysis.createdAt)}</span>
+              <span className="tag">Motor {analysis.engineVersion}</span>
+              <span className="tag">{analysis.dataMode === "live" ? "Análisis real" : "Muestra ilustrativa"}</span>
+            </div>
+          </div>
+          <div className="report-score-panel rounded-2xl bg-[color:var(--c-bosque-soft)] px-6 py-5 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Privacy Score</p>
+            <p className="mt-1 font-disp text-5xl font-semibold tracking-tight tnum">{analysis.score}<span className="text-xl text-muted">/100</span></p>
+            <p className="mt-1 text-xs text-muted">Resultado del motor</p>
+          </div>
+        </div>
+        {analysis.dataMode === "sample" ? <p className="mt-5 rounded-xl border border-[color:var(--c-risk-med)] bg-[color:var(--c-risk-med-soft)] p-3 text-sm">Esta es una muestra ilustrativa. No representa resultados reales del sitio indicado.</p> : null}
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-line-soft pt-5 md:grid-cols-4">
+          <div><p className="text-xs text-muted">Cobertura evaluada</p><p className="mt-1 text-2xl font-semibold tnum">{Math.round(analysis.dimensions.filter((d) => d.evaluated).reduce((sum, d) => sum + d.weight, 0) * 100)}%</p></div>
+          <div><p className="text-xs text-muted">Dimensiones evaluadas</p><p className="mt-1 text-2xl font-semibold tnum">{analysis.dimensions.filter((d) => d.evaluated).length}<span className="text-sm text-muted">/{analysis.dimensions.length}</span></p></div>
+          <div><p className="text-xs text-muted">Hallazgos</p><p className="mt-1 text-2xl font-semibold tnum">{analysis.findings.length}</p></div>
+          <div><p className="text-xs text-muted">Evidencias</p><p className="mt-1 text-2xl font-semibold tnum">{analysis.evidence.length}</p></div>
+        </div>
+        <p className="mt-4 text-xs leading-5 text-muted">La cobertura indica qué proporción del peso de las dimensiones pudo evaluarse. No equivale al Privacy Score ni representa por sí sola el nivel de riesgo. Las conclusiones se limitan a las evidencias registradas en esta ejecución.</p>
+      </section>
 
       <Tabs
         tabs={TABS.map((t) => ({
